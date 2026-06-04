@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pydantic import BaseModel, Field
 from typing import Any
 import random
@@ -27,6 +28,10 @@ class SFTTrace(BaseModel):
     response: dict[str, Any]
     intent_spec: str
     verified: bool = False
+    # For multi-step traces: ordered list of (tool_call, response) pairs
+    steps: list[dict[str, Any]] = Field(default_factory=list)
+    # Error injection metadata
+    injected_error: str | None = None
 
 
 class SchemaParser:
@@ -55,6 +60,15 @@ class SchemaParser:
             version=info.get("version", "1.0"),
             endpoints=endpoints,
         )
+
+
+ERROR_TYPES: list[dict[str, Any]] = [
+    {"type": "missing_required_param", "description": "A required parameter is omitted"},
+    {"type": "wrong_type", "description": "A parameter value has the wrong type"},
+    {"type": "out_of_range", "description": "A numeric value is outside valid bounds"},
+    {"type": "invalid_enum", "description": "An enum field has an invalid value"},
+    {"type": "extra_param", "description": "An unexpected extra parameter is included"},
+]
 
 
 class TraceGenerator:
@@ -87,3 +101,74 @@ class TraceGenerator:
                 )
             )
         return traces
+
+    def generate_multi_step_trace(
+        self, schema: APISchema, n_steps: int = 3
+    ) -> SFTTrace:
+        """Generate a single SFTTrace that chains *n_steps* endpoint calls.
+
+        The returned trace's ``tool_call`` and ``response`` reflect the *last*
+        step; all steps are stored in ``steps`` for full trajectory inspection.
+        """
+        eps = [
+            ep
+            for ep in itertools.islice(itertools.cycle(schema.endpoints), n_steps)
+        ]
+        steps: list[dict[str, Any]] = []
+        for ep in eps:
+            args = {p["name"]: self._sample_value(p) for p in ep.parameters if "name" in p}
+            step = {
+                "tool_call": {"name": ep.operation_id, "arguments": args},
+                "response": {"status": "ok", "data": {k: f"result_{k}" for k in args}},
+                "intent": f"{ep.description or ep.operation_id} on {ep.path}",
+            }
+            steps.append(step)
+
+        last = steps[-1]
+        instruction_parts = [s["intent"] for s in steps]
+        return SFTTrace(
+            instruction=" -> ".join(instruction_parts),
+            tool_call=last["tool_call"],
+            response=last["response"],
+            intent_spec=f"Multi-step workflow: {', '.join(instruction_parts)}",
+            steps=steps,
+        )
+
+    def inject_error(
+        self,
+        trace: SFTTrace,
+        error_type: str | None = None,
+    ) -> SFTTrace:
+        """Return a *new* SFTTrace with a synthetic error injected for robustness testing.
+
+        The original trace is not modified.  ``injected_error`` records which
+        error type was applied.  ``verified`` is set to False.
+        """
+        chosen = error_type or self._rng.choice(ERROR_TYPES)["type"]
+        tool_call = dict(trace.tool_call)
+        args: dict[str, Any] = dict(tool_call.get("arguments", {}))
+
+        if chosen == "missing_required_param" and args:
+            key = self._rng.choice(list(args.keys()))
+            args.pop(key)
+        elif chosen == "wrong_type" and args:
+            key = self._rng.choice(list(args.keys()))
+            args[key] = ["unexpected", "list"]  # force wrong type
+        elif chosen == "out_of_range":
+            args["__injected_int"] = -99999
+        elif chosen == "invalid_enum":
+            args["__injected_enum"] = "INVALID_ENUM_VALUE"
+        elif chosen == "extra_param":
+            args["__extra_unexpected_param"] = "injected"
+
+        tool_call["arguments"] = args
+        return SFTTrace(
+            trace_id=trace.trace_id,
+            instruction=trace.instruction,
+            tool_call=tool_call,
+            response={"status": "error", "error": chosen},
+            intent_spec=trace.intent_spec,
+            verified=False,
+            steps=list(trace.steps),
+            injected_error=chosen,
+        )
