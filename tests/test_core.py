@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from enterprisesynth.core import SchemaParser, TraceGenerator, SFTTrace, APISchema, Endpoint
@@ -63,12 +64,10 @@ def test_tool_call_has_name():
 
 def test_generate_traces_cycles_when_n_exceeds_endpoints():
     schema = _schema()
-    # schema has 3 endpoints, request 9 traces
     gen = TraceGenerator()
     traces = gen.generate_traces(schema, n=9)
     assert len(traces) == 9
     names = [t.tool_call["name"] for t in traces]
-    # Should cycle: first 3 names should repeat at positions 3-5
     assert names[:3] == names[3:6]
 
 

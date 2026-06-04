@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import Any
-import random, uuid, itertools
+import random
+import uuid
+import itertools
 
 
 class Endpoint(BaseModel):

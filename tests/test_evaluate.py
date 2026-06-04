@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from enterprisesynth.core import SchemaParser, TraceGenerator, SFTTrace
@@ -15,19 +16,16 @@ def _setup():
 
 def test_verify_trace_valid():
     schema, traces = _setup()
-    # First trace should have required params satisfied by generator
     result = verify_trace(traces[0], schema)
     assert isinstance(result, bool)
-    # Generator fills all params so should be True for endpoints with required params
     assert result is True
 
 
 def test_verify_trace_missing_param():
     schema, _ = _setup()
-    # Create a trace with missing required args
     bad_trace = SFTTrace(
         instruction="test",
-        tool_call={"name": "createContact", "arguments": {}},  # missing name, email
+        tool_call={"name": "createContact", "arguments": {}},
         response={},
         intent_spec="test",
     )
@@ -36,7 +34,6 @@ def test_verify_trace_missing_param():
 
 def test_dual_output_stats_verified_rate_in_range():
     _, traces = _setup()
-    # Mark some as verified
     for t in traces[:3]:
         t.verified = True
     stats = dual_output_stats(traces)
