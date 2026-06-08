@@ -149,4 +149,20 @@ Example usage:
 
 ```bash
 python tests/test_constraints.py
+```## Research Paper Infrastructure
+
+EnterpriseSynth now includes a research-paper framework for evaluating privacy, utility, fidelity, and model collapse behavior in enterprise synthetic-data systems.
+
+Paper components include:
+
+* Privacy benchmarking
+* TSTR evaluation
+* Constraint consistency analysis
+* Model collapse detection
+* Enterprise compliance guidance
+
+Location:
+
+```text
+paper/
 ```
