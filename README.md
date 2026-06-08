@@ -130,3 +130,23 @@ paths:
   note         = {Preprint}
 }
 ```
+## Logical Consistency Benchmarking
+
+This module evaluates inter-column logical consistency in synthetic enterprise tabular data.
+
+Current features:
+- HR schema constraint validation
+- Dataset-level violation metrics
+- CSV-based evaluation pipeline
+- Constraint violation tracing
+
+Example constraints:
+- hire_date <= termination_date
+- salary >= 0
+- age consistency with birth_year
+
+Example usage:
+
+```bash
+python tests/test_constraints.py
+```
