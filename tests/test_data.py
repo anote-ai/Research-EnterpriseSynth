@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from enterprisesynth.data import crm_spec, finance_spec, devops_spec, healthcare_spec, legal_spec
 from enterprisesynth.core import SchemaParser
 
