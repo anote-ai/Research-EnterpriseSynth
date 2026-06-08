@@ -1,5 +1,6 @@
 from __future__ import annotations
 import math
+from collections import Counter
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -38,14 +39,11 @@ def dual_output_stats(traces: list["SFTTrace"]) -> dict:
 
 def cold_start_score(traces: list["SFTTrace"]) -> float:
     """Score reflecting both verification rate and endpoint coverage diversity."""
-    total = len(traces)
-    if total == 0:
+    if not traces:
         return 0.0
-    verified_count = sum(1 for t in traces if t.verified)
-    verified_rate = verified_count / total
-    unique_endpoints = len({t.tool_call.get("name", "") for t in traces})
-    coverage = unique_endpoints / max(1, total)
-    return verified_rate * coverage
+    stats = dual_output_stats(traces)
+    coverage = stats["unique_endpoints"] / max(1, stats["total"])
+    return stats["verified_rate"] * coverage
 
 
 def trace_diversity_score(traces: list["SFTTrace"]) -> float:
@@ -62,7 +60,6 @@ def trace_diversity_score(traces: list["SFTTrace"]) -> float:
     if total <= 1:
         return 0.0
 
-    # Collect values per argument key
     key_values: dict[str, list[str]] = {}
     for trace in traces:
         for k, v in trace.tool_call.get("arguments", {}).items():
@@ -77,13 +74,9 @@ def trace_diversity_score(traces: list["SFTTrace"]) -> float:
 
     entropies: list[float] = []
     for values in key_values.values():
-        counts: dict[str, int] = {}
-        for v in values:
-            counts[v] = counts.get(v, 0) + 1
+        counts = Counter(values)
         n = len(values)
-        entropy = -sum(
-            (c / n) * math.log2(c / n) for c in counts.values() if c > 0
-        )
+        entropy = -sum((c / n) * math.log2(c / n) for c in counts.values())
         entropies.append(entropy / max_entropy)
 
     return sum(entropies) / len(entropies)
