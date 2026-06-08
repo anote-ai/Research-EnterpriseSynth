@@ -115,3 +115,22 @@ paths:
   note         = {Preprint}
 }
 ```
+## Privacy Benchmark Framework
+
+This module evaluates differential privacy tradeoffs for enterprise synthetic datasets.
+
+Features:
+- Membership inference attack benchmarking (AUC)
+- Privacy score evaluation
+- Utility score evaluation (TSTR)
+- Statistical fidelity benchmarking
+- Pareto frontier generation across ε configurations
+
+Example benchmark dimensions:
+- Privacy vs Utility
+- Privacy vs Fidelity
+- Compliance-oriented ε tuning
+
+Location:
+```text
+src/privacy_benchmark/
