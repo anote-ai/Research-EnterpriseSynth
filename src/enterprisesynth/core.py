@@ -80,6 +80,8 @@ class TraceGenerator:
         name = param.get("name", "value")
         if t == "integer":
             return self._rng.randint(1, 100)
+        if t in ("number", "float"):
+            return round(self._rng.uniform(0.0, 100.0), 2)
         if t == "boolean":
             return self._rng.choice([True, False])
         if t == "array":

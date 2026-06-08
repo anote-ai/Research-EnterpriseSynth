@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from enterprisesynth.core import SchemaParser, TraceGenerator, SFTTrace
 from enterprisesynth.data import crm_spec, healthcare_spec, legal_spec
 from enterprisesynth.evaluate import (
@@ -76,6 +72,10 @@ def test_verified_rate_all_verified():
 
 
 # --- trace_diversity_score ---
+
+def test_trace_diversity_score_empty():
+    assert trace_diversity_score([]) == 0.0
+
 
 def test_trace_diversity_score_zero_for_single():
     _, traces = _setup()
@@ -184,6 +184,48 @@ def test_inject_error_extra_param():
     gen = TraceGenerator(seed=42)
     errored = gen.inject_error(traces[0], error_type="extra_param")
     assert "__extra_unexpected_param" in errored.tool_call.get("arguments", {})
+
+
+def test_inject_error_missing_param_on_empty_args():
+    gen = TraceGenerator(seed=42)
+    trace = SFTTrace(
+        instruction="test",
+        tool_call={"name": "noArgs", "arguments": {}},
+        response={},
+        intent_spec="test",
+    )
+    errored = gen.inject_error(trace, error_type="missing_required_param")
+    assert errored.injected_error == "missing_required_param"
+    assert errored.tool_call["arguments"] == {}
+
+
+def test_inject_error_wrong_type_on_empty_args():
+    gen = TraceGenerator(seed=42)
+    trace = SFTTrace(
+        instruction="test",
+        tool_call={"name": "noArgs", "arguments": {}},
+        response={},
+        intent_spec="test",
+    )
+    errored = gen.inject_error(trace, error_type="wrong_type")
+    assert errored.injected_error == "wrong_type"
+
+
+def test_cold_start_score_empty():
+    assert cold_start_score([]) == 0.0
+
+
+def test_sample_value_float_type():
+    from enterprisesynth.core import TraceGenerator
+    gen = TraceGenerator(seed=0)
+    val = gen._sample_value({"name": "price", "type": "float"})
+    assert isinstance(val, float)
+
+
+def test_sample_value_number_type():
+    gen = TraceGenerator(seed=0)
+    val = gen._sample_value({"name": "rate", "type": "number"})
+    assert isinstance(val, float)
 
 
 # --- healthcare and legal specs ---
