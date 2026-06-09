@@ -42,8 +42,8 @@ def cold_start_score(traces: list["SFTTrace"]) -> float:
     if not traces:
         return 0.0
     stats = dual_output_stats(traces)
-    coverage = stats["unique_endpoints"] / max(1, stats["total"])
-    return stats["verified_rate"] * coverage
+    coverage = float(stats["unique_endpoints"]) / max(1, int(stats["total"]))
+    return float(stats["verified_rate"]) * coverage
 
 
 def trace_diversity_score(traces: list["SFTTrace"]) -> float:

@@ -28,7 +28,6 @@ from privacy_benchmark.stats import (
     verify_epsilon_accounting,
 )
 from privacy_benchmark.evaluator import (
-    evaluate_configuration,
     evaluate_with_ci,
     evaluate_multi_seed,
 )
