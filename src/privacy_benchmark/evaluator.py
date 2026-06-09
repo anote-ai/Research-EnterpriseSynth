@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Sequence
 
 from privacy_benchmark.metrics import (
