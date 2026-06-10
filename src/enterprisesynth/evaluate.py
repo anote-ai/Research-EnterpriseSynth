@@ -1,67 +1,94 @@
-"""Evaluation and verification utilities for EnterpriseSynth traces."""
-
 from __future__ import annotations
+import math
+from collections import Counter
+from typing import TYPE_CHECKING
 
-from .core import APISchema, SFTTrace
-
-
-def verify_trace(trace: SFTTrace, schema: APISchema) -> bool:
-    """Verify that a trace's tool call keys match any endpoint's parameter names.
-
-    A trace is considered valid if its ``tool_call['arguments']`` keys are a
-    subset of the parameter names defined for at least one endpoint in the
-    schema.
-
-    Args:
-        trace: The SFT trace to verify.
-        schema: The API schema providing ground-truth parameter names.
-
-    Returns:
-        True if the trace is consistent with the schema, False otherwise.
-    """
-    call_keys = set(trace.tool_call.get("arguments", {}).keys())
-    for endpoint in schema.endpoints:
-        endpoint_param_names = {p.get("name", "") for p in endpoint.parameters}
-        if call_keys <= endpoint_param_names:
-            return True
-    return False
+if TYPE_CHECKING:
+    from .core import SFTTrace, APISchema
 
 
-def dual_output_stats(traces: list[SFTTrace]) -> dict[str, object]:
-    """Compute statistics for a mixed SFT + eval trace set.
+def verify_trace(trace: "SFTTrace", schema: "APISchema") -> bool:
+    """Find matching endpoint by operation_id; check all required params are present."""
+    tool_name = trace.tool_call.get("name", "")
+    endpoint = next(
+        (ep for ep in schema.endpoints if ep.operation_id == tool_name), None
+    )
+    if endpoint is None:
+        return False
+    provided_keys = set(trace.tool_call.get("arguments", {}).keys())
+    required_params = {
+        p["name"]
+        for p in endpoint.parameters
+        if "name" in p and p.get("required", True)
+    }
+    return required_params.issubset(provided_keys)
 
-    Args:
-        traces: List of :class:`SFTTrace` instances, some verified and some not.
 
-    Returns:
-        Dict with keys:
-
-        - ``sft_count`` — total number of traces.
-        - ``eval_count`` — number of unverified traces (usable as eval data).
-        - ``verified_rate`` — fraction of traces that are verified.
-    """
+def dual_output_stats(traces: list["SFTTrace"]) -> dict:
+    """Summary stats over a list of SFTTrace objects."""
     total = len(traces)
-    verified = sum(1 for t in traces if t.verified)
-    unverified = total - verified
+    verified_count = sum(1 for t in traces if t.verified)
+    unique_endpoints = len({t.tool_call.get("name", "") for t in traces})
     return {
-        "sft_count": total,
-        "eval_count": unverified,
-        "verified_rate": verified / total if total > 0 else 0.0,
+        "verified_count": verified_count,
+        "total": total,
+        "verified_rate": verified_count / total if total > 0 else 0.0,
+        "unique_endpoints": unique_endpoints,
     }
 
 
-def cold_start_score(traces: list[SFTTrace]) -> float:
-    """Compute the cold-start quality score as the ratio of verified traces.
-
-    A higher score indicates that more synthetically generated traces pass
-    schema validation, making them safe to use for SFT without live API calls.
-
-    Args:
-        traces: List of :class:`SFTTrace` instances.
-
-    Returns:
-        Float in [0.0, 1.0].  Returns 0.0 for an empty list.
-    """
+def cold_start_score(traces: list["SFTTrace"]) -> float:
+    """Score reflecting both verification rate and endpoint coverage diversity."""
     if not traces:
         return 0.0
-    return sum(1 for t in traces if t.verified) / len(traces)
+    stats = dual_output_stats(traces)
+    coverage = float(stats["unique_endpoints"]) / max(1, int(stats["total"]))
+    return float(stats["verified_rate"]) * coverage
+
+
+def trace_diversity_score(traces: list["SFTTrace"]) -> float:
+    """Measure argument-level diversity across traces using normalised entropy.
+
+    For each argument key observed across all traces, compute the entropy of
+    the distribution of its values.  The final score is the mean normalised
+    entropy across all argument keys, where normalisation is against
+    ``log2(total_traces)``.
+
+    Returns a score in [0, 1] where 1 = maximally diverse.
+    """
+    total = len(traces)
+    if total <= 1:
+        return 0.0
+
+    key_values: dict[str, list[str]] = {}
+    for trace in traces:
+        for k, v in trace.tool_call.get("arguments", {}).items():
+            key_values.setdefault(k, []).append(str(v))
+
+    if not key_values:
+        return 0.0
+
+    max_entropy = math.log2(total)
+    if max_entropy == 0:
+        return 0.0
+
+    entropies: list[float] = []
+    for values in key_values.values():
+        counts = Counter(values)
+        n = len(values)
+        entropy = -sum((c / n) * math.log2(c / n) for c in counts.values())
+        entropies.append(entropy / max_entropy)
+
+    return sum(entropies) / len(entropies)
+
+
+def schema_coverage_score(traces: list["SFTTrace"], schema: "APISchema") -> float:
+    """Fraction of schema endpoints exercised by at least one trace.
+
+    Returns a score in [0, 1] where 1 = every endpoint is covered.
+    """
+    if not schema.endpoints:
+        return 1.0
+    endpoint_ids = {ep.operation_id for ep in schema.endpoints}
+    covered = {t.tool_call.get("name", "") for t in traces} & endpoint_ids
+    return len(covered) / len(endpoint_ids)

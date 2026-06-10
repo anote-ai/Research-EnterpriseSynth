@@ -1,16 +1,23 @@
-"""EnterpriseSynth: Agentic SFT + Eval data from API schemas without live execution."""
+"""EnterpriseSynth: Synthetic SFT trace generation from enterprise OpenAPI schemas."""
+from .core import Endpoint, APISchema, SFTTrace, SchemaParser, TraceGenerator
+from .evaluate import (
+    verify_trace,
+    dual_output_stats,
+    cold_start_score,
+    trace_diversity_score,
+    schema_coverage_score,
+)
 
-from .core import APISchema, Endpoint, SFTTrace, SchemaParser, TraceGenerator
-from .evaluate import cold_start_score, dual_output_stats, verify_trace
-
+__version__ = "0.1.0"
 __all__ = [
-    "APISchema",
     "Endpoint",
+    "APISchema",
     "SFTTrace",
     "SchemaParser",
     "TraceGenerator",
     "verify_trace",
     "dual_output_stats",
     "cold_start_score",
+    "trace_diversity_score",
+    "schema_coverage_score",
 ]
-__version__ = "0.1.0"

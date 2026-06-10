@@ -1,105 +1,83 @@
-"""Tests for enterprisesynth.core."""
-
-import pytest
-
-from enterprisesynth.core import APISchema, Endpoint, SFTTrace, SchemaParser, TraceGenerator
+from enterprisesynth.core import SchemaParser, TraceGenerator, SFTTrace, APISchema, Endpoint
+from enterprisesynth.data import crm_spec
 
 
-# ---------------------------------------------------------------------------
-# Endpoint
-# ---------------------------------------------------------------------------
-
-def test_endpoint_creation() -> None:
-    ep = Endpoint(path="/users", method="GET")
-    assert ep.path == "/users"
-    assert ep.method == "GET"
-    assert ep.parameters == []
+def _schema():
+    return SchemaParser().parse_openapi(crm_spec())
 
 
-def test_endpoint_with_parameters() -> None:
-    ep = Endpoint(
-        path="/users/{id}",
-        method="GET",
-        parameters=[{"name": "id", "in": "path", "required": True}],
-    )
-    assert len(ep.parameters) == 1
-    assert ep.parameters[0]["name"] == "id"
+def test_schema_parser_parse_openapi():
+    schema = _schema()
+    assert isinstance(schema, APISchema)
+    assert schema.title == "CRM API"
 
 
-# ---------------------------------------------------------------------------
-# APISchema
-# ---------------------------------------------------------------------------
-
-def test_api_schema_creation() -> None:
-    schema = APISchema(title="Petstore", version="1.0.0")
-    assert schema.title == "Petstore"
-    assert schema.endpoints == []
+def test_api_schema_endpoints_length():
+    schema = _schema()
+    assert len(schema.endpoints) == 3
 
 
-def test_api_schema_with_endpoints() -> None:
-    endpoints = [
-        Endpoint(path="/pets", method="GET"),
-        Endpoint(path="/pets", method="POST"),
-    ]
-    schema = APISchema(title="Petstore", version="1.0.0", endpoints=endpoints)
-    assert len(schema.endpoints) == 2
+def test_endpoint_fields():
+    schema = _schema()
+    ep = schema.endpoints[0]
+    assert isinstance(ep, Endpoint)
+    assert ep.path
+    assert ep.method
+    assert ep.operation_id
 
 
-# ---------------------------------------------------------------------------
-# SFTTrace
-# ---------------------------------------------------------------------------
+def test_trace_generator_generate_traces_count():
+    schema = _schema()
+    gen = TraceGenerator()
+    traces = gen.generate_traces(schema, n=5)
+    assert len(traces) == 5
 
-def test_sft_trace_creation() -> None:
+
+def test_trace_has_required_fields():
+    schema = _schema()
+    gen = TraceGenerator()
+    trace = gen.generate_traces(schema, n=1)[0]
+    assert trace.instruction
+    assert trace.tool_call
+    assert trace.response
+    assert trace.intent_spec
+
+
+def test_sft_trace_trace_id_auto_generated():
     trace = SFTTrace(
-        instruction="List all pets",
-        tool_call={"tool_name": "list_pets", "arguments": {}},
-        response={"pets": []},
+        instruction="test", tool_call={}, response={}, intent_spec="test"
     )
-    assert trace.instruction == "List all pets"
+    assert trace.trace_id
+    assert len(trace.trace_id) == 8
+
+
+def test_tool_call_has_name():
+    schema = _schema()
+    gen = TraceGenerator()
+    trace = gen.generate_traces(schema, n=1)[0]
+    assert "name" in trace.tool_call
+
+
+def test_generate_traces_cycles_when_n_exceeds_endpoints():
+    schema = _schema()
+    gen = TraceGenerator()
+    traces = gen.generate_traces(schema, n=9)
+    assert len(traces) == 9
+    names = [t.tool_call["name"] for t in traces]
+    assert names[:3] == names[3:6]
+
+
+def test_trace_generator_seed_reproducibility():
+    schema = _schema()
+    gen1 = TraceGenerator(seed=0)
+    gen2 = TraceGenerator(seed=0)
+    t1 = gen1.generate_traces(schema, n=5)
+    t2 = gen2.generate_traces(schema, n=5)
+    assert [t.tool_call for t in t1] == [t.tool_call for t in t2]
+
+
+def test_sft_trace_verified_false_by_default():
+    trace = SFTTrace(
+        instruction="test", tool_call={}, response={}, intent_spec="test"
+    )
     assert trace.verified is False
-
-
-def test_sft_trace_verified_flag() -> None:
-    trace = SFTTrace(
-        instruction="Get user",
-        tool_call={"tool_name": "get_user", "arguments": {"id": "123"}},
-        response={"id": "123", "name": "Alice"},
-        verified=True,
-    )
-    assert trace.verified is True
-
-
-# ---------------------------------------------------------------------------
-# SchemaParser
-# ---------------------------------------------------------------------------
-
-def test_schema_parser_instantiation() -> None:
-    parser = SchemaParser()
-    assert parser is not None
-
-
-def test_schema_parser_parse_openapi_raises() -> None:
-    parser = SchemaParser()
-    with pytest.raises(NotImplementedError):
-        parser.parse_openapi({})
-
-
-# ---------------------------------------------------------------------------
-# TraceGenerator
-# ---------------------------------------------------------------------------
-
-def test_trace_generator_instantiation_default() -> None:
-    gen = TraceGenerator()
-    assert gen.model == "gpt-4o-mini"
-
-
-def test_trace_generator_instantiation_custom_model() -> None:
-    gen = TraceGenerator(model="claude-3-haiku")
-    assert gen.model == "claude-3-haiku"
-
-
-def test_trace_generator_generate_traces_raises() -> None:
-    gen = TraceGenerator()
-    schema = APISchema(title="Test", version="0.1")
-    with pytest.raises(NotImplementedError):
-        gen.generate_traces(schema, n=5)

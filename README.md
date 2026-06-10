@@ -1,94 +1,152 @@
 # EnterpriseSynth
 
 [![CI](https://github.com/anote-ai/research-enterprisesynth/actions/workflows/ci.yml/badge.svg)](https://github.com/anote-ai/research-enterprisesynth/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **EnterpriseSynth — Agentic SFT + Eval Data from API Schemas Without Live Execution**
+## Cold-Start Motivation
 
-## The Cold-Start Problem
+Fine-tuning LLM agents for enterprise tool-use requires thousands of high-quality (instruction, tool_call, response) traces — data that enterprises rarely have at day zero. EnterpriseSynth solves the cold-start problem by automatically generating verified SFT traces directly from OpenAPI schemas, without requiring any real user interactions or API calls.
 
-Fine-tuning or evaluating tool-calling agents on enterprise APIs requires paired (instruction, tool_call, response) traces. Collecting these traces in production requires live API access, test environments, and human annotation — a prohibitive cold-start cost for most enterprise deployments.
+By grounding generation in the schema's operation semantics, EnterpriseSynth produces traces that are structurally valid by construction. A lightweight verification layer checks parameter completeness against the schema, yielding a `cold_start_score` that reflects both verification rate and endpoint coverage diversity — a proxy for how much of the API surface the synthetic traces explore.
+## Research Significance
 
-**EnterpriseSynth** solves this by ingesting OpenAPI/Swagger specifications and generating verified SFT traces + eval records *without ever calling the real API*. An LLM synthesises realistic (instruction, tool_call, response) triples; a schema-based verifier filters out hallucinated parameter names; surviving traces are dual-output as SFT training data and eval records annotated with intent specifications.
+EnterpriseSynth addresses a fundamental bottleneck in enterprise agent alignment: the lack of high-quality tool-use supervision data during early-stage deployment. By synthesizing structurally verified traces directly from OpenAPI specifications, the framework enables scalable cold-start instruction tuning without requiring sensitive production logs or real customer interactions.
+
+Beyond synthetic data generation, EnterpriseSynth introduces a verification-aware generation pipeline that couples schema-grounded trace synthesis with lightweight semantic validation and endpoint coverage analysis. This allows researchers to systematically evaluate how effectively generated traces explore enterprise API surfaces while maintaining structural correctness.
+
+The framework is especially relevant for:
+
+* Enterprise LLM agents
+* Tool-use alignment research
+* Synthetic SFT dataset generation
+* API-grounded agent evaluation
+* Cold-start enterprise AI deployment
+
+EnterpriseSynth aims to provide a reproducible foundation for future research on schema-conditioned agent supervision and enterprise-scale tool-use evaluation.
 
 ## Pipeline
 
 ```
- OpenAPI / Swagger Spec (YAML / JSON)
-           │
-    ┌──────▼──────┐
-    │ SchemaParser │   parse_openapi()
-    └──────┬──────┘
-           │  APISchema (endpoints, parameters, response schemas)
-    ┌──────▼──────────┐
-    │ TraceGenerator   │   generate_traces(schema, n)
-    │  (LLM-powered)   │
-    └──────┬───────────┘
-           │  list[SFTTrace]  (unverified)
-    ┌──────▼──────────┐
-    │ verify_trace()   │   schema-based param validation
-    └──────┬───────────┘
-           │
-     ┌─────┴──────┐
-     │            │
-  Verified     Unverified
-  SFT Data     Eval Records
+OpenAPI Schema (YAML/JSON)
+        |
+        v
+  [SchemaParser]
+        |
+        v
+   APISchema
+  (Endpoints)
+        |
+        v
+ [TraceGenerator]
+  (seeded random)
+        |
+        v
+  SFT Traces
+  (instruction +
+   tool_call +
+   response +
+   intent_spec)
+        |
+        v
+  [verify_trace]
+        |
+        +---> verified=True  --> SFT Dataset
+        |
+        +---> verified=False --> Filter / Retry
+        |
+        v
+ [dual_output_stats]
+ [cold_start_score]
 ```
 
-## OpenAPI Example
+## Quick Start
+
+```bash
+pip install -e ".[dev]"
+python scripts/run_synth.py
+```
+
+```python
+from enterprisesynth.core import SchemaParser, TraceGenerator
+from enterprisesynth.data import crm_spec
+from enterprisesynth.evaluate import verify_trace, dual_output_stats
+
+schema = SchemaParser().parse_openapi(crm_spec())
+gen = TraceGenerator(seed=42)
+traces = gen.generate_traces(schema, n=10)
+
+for trace in traces:
+    trace.verified = verify_trace(trace, schema)
+
+print(dual_output_stats(traces))
+# {'verified_count': 10, 'total': 10, 'verified_rate': 1.0, 'unique_endpoints': 3}
+```
+
+## OpenAPI Snippet
 
 ```yaml
-openapi: "3.0.0"
 info:
-  title: Petstore
-  version: "1.0.0"
+  title: CRM API
+  version: 1.0.0
 paths:
-  /pets:
-    get:
-      operationId: listPets
+  /contacts:
+    post:
+      operationId: createContact
+      summary: Create a new contact
       parameters:
-        - name: limit
-          in: query
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: A list of pets
+        - name: name
+          type: string
+          required: true
+        - name: email
+          type: string
+          required: true
 ```
-
-`SchemaParser.parse_openapi()` will convert the above into an `APISchema` with one `Endpoint` whose `parameters` list contains `{"name": "limit", "in": "query"}`.
 
 ## Output Format
 
-| Field | SFT Trace | Eval Record |
-|-------|-----------|-------------|
-| `instruction` | Natural-language task | Same |
-| `tool_call` | LLM-generated | Same |
-| `response` | Simulated | Same |
-| `intent_spec` | Structured intent JSON | Same |
-| `verified` | `True` (schema-valid) | `False` (may contain errors) |
+| Field | Type | Description |
+|---|---|---|
+| `trace_id` | `str` | Auto-generated 8-char UUID prefix |
+| `instruction` | `str` | Natural language task description |
+| `tool_call` | `dict` | `{name, arguments}` matching the OpenAPI operationId |
+| `response` | `dict` | Synthetic `{status, data}` response |
+| `intent_spec` | `str` | Human-readable intent statement |
+| `verified` | `bool` | Whether all required params are present |
 
-## Quickstart
+## Target Venues
 
-```bash
-git clone https://github.com/anote-ai/research-enterprisesynth
-cd research-enterprisesynth
-pip install -e ".[dev]"
-pytest tests/ -v
-```
+- MLinPL 2026 (Machine Learning in Poland Conference)
+- AAAI 2027 Workshop on Enterprise AI Evaluation
 
 ## Citation
 
 ```bibtex
-@misc{anoteai2025enterprisesynth,
-  title        = {EnterpriseSynth: Agentic SFT + Eval Data from API Schemas Without Live Execution},
+@misc{enterprisesynth2026,
+  title        = {EnterpriseSynth: Cold-Start SFT Trace Generation from Enterprise OpenAPI Schemas},
   author       = {Anote AI Research},
-  year         = {2025},
+  year         = {2026},
   howpublished = {\url{https://github.com/anote-ai/research-enterprisesynth}},
+  note         = {Preprint}
 }
 ```
+## Logical Consistency Benchmarking
 
-## License
+This module evaluates inter-column logical consistency in synthetic enterprise tabular data.
 
-MIT
+Current features:
+- HR schema constraint validation
+- Dataset-level violation metrics
+- CSV-based evaluation pipeline
+- Constraint violation tracing
+
+Example constraints:
+- hire_date <= termination_date
+- salary >= 0
+- age consistency with birth_year
+
+Example usage:
+
+```bash
+python tests/test_constraints.py
+```
