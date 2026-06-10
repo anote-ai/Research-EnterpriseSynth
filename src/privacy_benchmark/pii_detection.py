@@ -63,7 +63,7 @@ def pii_leakage_score(
     real_texts: Sequence[str],
     *,
     threshold_multiplier: float = 1.05,
-) -> dict[str, float | bool | str]:
+) -> dict[str, object]:
     """Measure whether synthetic documents leak more PII than real documents.
 
     Computes mean PII density per category for both corpora. A category
