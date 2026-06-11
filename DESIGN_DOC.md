@@ -1,74 +1,254 @@
-# EnterpriseSynth — Research Design Document
+# Research Design Document: Enterprise Synthetic Data
 
-## Goal
+## Vision Statement
 
-Demonstrate that differential privacy (DP) synthetic data generation can meet enterprise utility requirements while providing formal privacy guarantees, and produce the first systematic characterization of the utility-privacy tradeoff across enterprise schema types.
+Prove that **differentially private synthetic enterprise data** can replace real sensitive data for model training and testing with <5% accuracy degradation, and deliver **EnterpriseSynth-Bench**: the first benchmark measuring the utility-privacy tradeoff specifically for enterprise data types (HR records, CRM data, financial transactions) — enabling organizations to safely share and train on data that is currently locked behind compliance barriers.
 
-## Objective
+---
 
-1. Build a DP synthetic data generation pipeline supporting tabular, time-series, and relational data with foreign key preservation
-2. Evaluate utility (TSTR accuracy, statistical similarity, downstream model performance) vs. privacy (ε, membership inference resistance) tradeoffs across 5 enterprise domain types
-3. Produce a practical ε selection guide: for a given utility requirement and regulatory context, what ε value is appropriate?
+## Problem Statement & Novelty
 
-## Background / Motivation
+Enterprises hold vast quantities of sensitive data (employee records, customer transactions, financial filings) that cannot be shared for model training due to GDPR, HIPAA, and SOX constraints. Synthetic data generation is a promising solution, but:
 
-Enterprise organizations need to share and train on sensitive data (medical, financial, HR) but face GDPR, HIPAA, and CCPA compliance requirements. Synthetic data is the most promising solution, but organizations don't trust it because: (1) most commercial tools don't provide formal DP guarantees; (2) no one has published a systematic characterization of how utility degrades as ε tightens in enterprise settings.
+1. **No enterprise-specific benchmark**: Existing synthetic data benchmarks (SDGym, Syntheval) use generic tabular data; enterprise schemas have distinct characteristics (relational integrity, business logic constraints, temporal dependencies).
+2. **Privacy-utility tradeoff is poorly characterized**: At what ε (differential privacy budget) does synthetic data become useless for downstream ML tasks?
+3. **Schema-specific failure modes**: HR data, CRM data, and financial transactions have different generation challenges (e.g., salary distributions, customer lifetime value sequences, transaction fraud patterns).
+4. **No multi-table evaluation**: Enterprises need relational synthetic data (multiple tables with foreign key constraints), but existing methods evaluate single tables only.
+
+### Novel Contributions
+
+| Contribution | Description |
+|---|---|
+| **EnterpriseSynth-Bench** | 8 enterprise schema types × 3 privacy budgets × 5 generators = 120 evaluation conditions |
+| **DAUT metric** | Downstream Accuracy Under Transformation: accuracy of model trained on synthetic vs. real data |
+| **RIC metric** | Relational Integrity Compliance: fraction of synthetic rows satisfying FK + business logic constraints |
+| **Privacy audit protocol** | Membership inference attack suite for measuring actual privacy leakage |
+| **Schema-specific generation** | Fine-tuned generation strategies per enterprise schema type |
+
+### Key Metrics
+
+```
+DAUT(ε) = Accuracy_synthetic(ε) / Accuracy_real
+
+Target: DAUT ≥ 0.95 at ε ≤ 2.0 (strong privacy guarantee)
+
+RIC = |valid_synthetic_rows| / |total_synthetic_rows|
+Valid = satisfies all FK constraints + business logic rules
+```
+
+---
+
+## Research Objectives
+
+1. Characterize the **DAUT vs. ε curve** for 8 enterprise schema types — identify the ε "cliff" where utility collapses.
+2. Measure **RIC** for current generators: do they maintain relational integrity across multi-table schemas?
+3. Develop **schema-specific generation** strategies that improve DAUT by ≥10 pp vs. generic DP-SGD.
+4. Validate that generated data passes a **membership inference attack** at ε ≤ 2.0.
+5. Identify **schema types** where synthetic data is viable (DAUT ≥ 0.95) vs. not currently viable.
+
+---
+
+## Dataset Construction
+
+### Enterprise Schema Types (8 types)
+
+| Schema Type | Rows | Tables | Key Challenges |
+|---|---|---|---|
+| HR records | 50K | 4 | Salary distributions, org hierarchy |
+| CRM customers | 100K | 6 | CLV sequences, churn patterns |
+| Financial transactions | 200K | 3 | Fraud patterns, amount distributions |
+| Healthcare claims | 75K | 5 | ICD codes, temporal dependencies |
+| IT access logs | 150K | 2 | Time series, anomaly patterns |
+| Procurement | 80K | 4 | Vendor relationships, approvals |
+| Employee performance | 40K | 3 | Rating distributions, tenure |
+| Sales pipeline | 60K | 5 | Funnel stages, deal values |
+
+### Real Data Sources
+- **Synthetic gold**: Generated by domain experts following realistic schemas (not from real companies)
+- **Public data**: LinkedIn salary data (anonymized), SEC transaction data, open HR datasets
+- **Privacy-safe**: No real personal data used in benchmark construction
+
+### Downstream ML Tasks (for DAUT evaluation)
+- HR: Employee churn prediction
+- CRM: Customer lifetime value prediction
+- Financial: Fraud detection
+- Healthcare: Readmission prediction
+- IT: Anomaly detection
+- Sales: Deal win probability
+
+---
+
+## Generators Under Evaluation
+
+| Generator | Type | DP Support | Multi-table | Notes |
+|---|---|---|---|---|
+| CTGAN | GAN | No | No | Popular baseline |
+| TVAE | VAE | No | No | Variational |
+| DP-CTGAN | GAN + DP | Yes | No | DP baseline |
+| DP-Synthesizer | Marginal | Yes | No | Strongest DP |
+| REaLTabFormer | Transformer | No | Yes | Multi-table SOTA |
+| MOSTLY AI | Commercial | Yes | Yes | Enterprise tool |
+| Our method | Transformer + DP | Yes | Yes | Proposed |
+
+---
 
 ## Experimental Design
 
-### Baseline Experiment
+### Baseline Experiment (Experiment 0)
+**Protocol**: Run CTGAN (no DP) on HR schema. Measure DAUT and RIC.
 
-**Evaluate 3 non-DP synthetic data baselines (CTGAN, TVAE, Gaussian copula) on 3 public tabular datasets using Train-on-Synthetic Test-on-Real (TSTR) accuracy**
+**Expected result**: DAUT ≈ 0.97, RIC ≈ 0.89. CTGAN without DP is nearly lossless on simple single-table HR data — the challenge is adding privacy and multi-table support.
 
-- Metric: TSTR accuracy, Wasserstein distance on marginals, column correlation preservation
-- Purpose: establish the utility ceiling — what's achievable without DP?
-- Expected result: CTGAN TSTR accuracy ≈ 85–90% of real-data training accuracy
+---
 
-### Test Experiment 1: DP Utility-Privacy Tradeoff Curve
+### Experiment 1: DAUT vs. ε Curves
+**Hypothesis**: All current DP generators show DAUT collapse below ε = 1.0; our proposed method maintains DAUT ≥ 0.90 at ε = 0.5.
 
-Apply DP-SGD training at ε ∈ {0.1, 0.5, 1.0, 2.0, 5.0, 10.0}. For each ε: measure TSTR accuracy, Wasserstein distance, and membership inference attack success. Run 5 seeds; report mean ± std. Plot full utility-privacy Pareto curve.
+**Protocol**:
+1. Run all DP generators at ε ∈ {0.1, 0.5, 1.0, 2.0, 5.0, ∞ (no DP)} on all 8 schemas.
+2. For each condition, train downstream ML model on synthetic data, evaluate on real test set.
+3. Compute DAUT(ε) = accuracy_synthetic / accuracy_real.
+4. Identify ε_cliff: smallest ε where DAUT ≥ 0.95.
 
-**Expected result:** dramatic utility drop below ε=1.0 for standard DP-SGD; our improved training procedure reduces utility loss at ε=1.0 to <10% vs. non-DP baseline
+**Expected results**:
 
-### Test Experiment 2: Enterprise Schema Types
+| Generator | ε_cliff (DAUT ≥ 0.95) | DAUT at ε=1.0 | DAUT at ε=0.5 |
+|---|---|---|---|
+| DP-CTGAN | ε ≥ 3.0 | 0.88 | 0.71 |
+| DP-Synthesizer | ε ≥ 2.0 | 0.93 | 0.82 |
+| Our method | ε ≥ 0.8 | 0.96 | 0.91 |
 
-Repeat tradeoff experiment on 5 enterprise domain types: healthcare, financial transactions, HR, IoT sensor, e-commerce (relational). Test whether utility-privacy tradeoff differs by domain.
+- Financial transactions and fraud detection show the worst DP degradation (rare fraud patterns most affected)
+- HR and CRM schemas are most DP-resilient
 
-**Expected result:** time-series and relational data lose utility faster under DP; domain-specific ε recommendations emerge
+---
 
-### Test Experiment 3: Downstream Model Impact
+### Experiment 2: Relational Integrity Compliance
+**Hypothesis**: All current multi-table generators achieve RIC < 0.80 on complex schemas (3+ tables with business logic); our method achieves RIC ≥ 0.92.
 
-For each domain and ε: train a task-specific model on synthetic data, evaluate on real held-out data, compare to model trained on real data.
+**Protocol**:
+1. Generate 50K synthetic rows for each multi-table schema with each generator.
+2. Run constraint validator: check FK integrity, business rules (e.g., salary > 0, hire_date < termination_date).
+3. Compute RIC per generator per schema.
 
-**Expected result:** at ε=2.0, downstream model accuracy within 3–5% of real-data accuracy — acceptable for most enterprise use cases
+**Expected results**:
+- REaLTabFormer: RIC ≈ 0.76 (FK preserved but business rules violated)
+- MOSTLY AI: RIC ≈ 0.83 (commercial tool better at constraints)
+- Our method: RIC ≈ 0.93 (schema-aware generation)
+- Most common violations: temporal ordering (hire before termination) 45%, amount bounds 30%, categorical validity 25%
 
-## Expected Results
+---
 
-1. A DP synthetic data generation system supporting tabular, time-series, and relational data
-2. Full utility-privacy Pareto curves for 5 enterprise domain types
-3. Downstream model accuracy impact by domain and ε
-4. **Key finding:** "At ε=2.0, DP synthetic data trains ML models within 4% of real-data accuracy"
-5. A practical ε selection guide: domain type + acceptable utility loss → recommended ε range
+### Experiment 3: Privacy Audit
+**Hypothesis**: Synthetic data generated at ε ≤ 2.0 is resistant to membership inference attacks (MIA success rate ≤ random baseline + 5 pp).
 
-## Why This Matters / Why People Would Care
+**Protocol**:
+1. Train shadow models for membership inference attacks.
+2. Run 3 MIA variants: threshold attack, ML-based attack, nearest-neighbor attack.
+3. Measure: MIA success rate, advantage over random baseline.
+4. Compare DP (ε=1.0) vs. no-DP synthetic data.
 
-- **Enterprise data teams:** want to use synthetic data but don't know what ε to choose or whether utility will be acceptable
-- **Compliance officers:** GDPR and HIPAA compliance community needs formal privacy guarantees
-- **Healthcare and financial institutions:** largest holders of sensitive data and highest-value use cases
-- **AI researchers:** enterprise schema support and domain-specific tradeoff characterization are novel contributions
+**Expected results**:
+- No-DP synthetic data: MIA advantage ≈ 18 pp (significant privacy leakage)
+- DP (ε=2.0) synthetic data: MIA advantage ≈ 4 pp (within acceptable range)
+- DP (ε=0.5) synthetic data: MIA advantage ≈ 1 pp (near-perfect privacy)
+- Key finding: ε=1.0 provides sufficient privacy for most enterprise use cases
+
+---
+
+### Experiment 4: Schema-Specific Generation Strategies
+**Hypothesis**: Customizing generation strategy per schema type (e.g., copula-based for financial transactions, transformer-based for temporal HR data) improves DAUT by ≥10 pp vs. generic DP-SGD.
+
+**Protocol**:
+1. Implement schema-specific generators for 4 schema types.
+2. Compare: generic DP-SGD vs. schema-specific vs. our unified method.
+3. Measure DAUT improvement.
+
+**Expected results**:
+- Financial transactions (schema-specific copula): DAUT +13 pp vs. generic
+- HR records (schema-specific hierarchy-aware): DAUT +8 pp vs. generic
+- Unified method (learns schema type automatically): DAUT +10 pp avg
+
+---
+
+## Expected Results Summary
+
+| Metric | Current SOTA | Our Method | Improvement |
+|---|---|---|---|
+| DAUT at ε=1.0 | 0.88 (DP-CTGAN) | 0.96 | +9 pp |
+| RIC (multi-table) | 0.83 (MOSTLY AI) | 0.93 | +10 pp |
+| ε_cliff | 2.0 (DP-Synth) | 0.8 | 2.5× improvement |
+| MIA advantage at ε=1.0 | 6 pp | 4 pp | Within target |
+
+**Primary claim**: Schema-aware DP generation achieves DAUT ≥ 0.95 at ε = 1.0 for 6/8 enterprise schema types, making differentially private synthetic data viable for most enterprise ML applications.
+
+---
+
+## Why This Matters
+
+**For researchers**: EnterpriseSynth-Bench provides the first comprehensive benchmark for enterprise-specific synthetic data, enabling apples-to-apples comparison of generators.
+
+**For practitioners**: DAUT vs. ε curves give compliance teams a quantitative framework for choosing privacy budgets.
+
+**For Anote products**: Synthetic data generation is a natural Anote product feature — results directly inform product development.
+
+**Market**: GDPR compliance tools market is $4B+; synthetic data is a key enabling technology for AI on sensitive enterprise data.
+
+---
+
+## Implementation Plan
+
+```
+research-enterprisesynth/
+├── data/
+│   ├── schemas/         # 8 enterprise schema definitions
+│   ├── real_data/       # Gold synthetic / public datasets
+│   └── constraints/     # Business logic constraint specs
+├── generators/
+│   ├── baselines/       # CTGAN, TVAE, DP-CTGAN wrappers
+│   ├── our_method/      # Schema-aware DP transformer
+│   └── schema_specific/ # Per-schema generators
+├── metrics/
+│   ├── daut.py
+│   ├── ric.py
+│   └── privacy_audit.py
+├── experiments/
+│   ├── exp0_baseline.py
+│   ├── exp1_daut_curves.py
+│   ├── exp2_ric.py
+│   ├── exp3_privacy_audit.py
+│   └── exp4_schema_specific.py
+```
+
+---
 
 ## Timeline
 
-| Month | Milestone |
-|---|---|
-| 1–2 | System implementation (DP training, relational support, time-series support) |
-| 3 | Baseline evaluation on 3 public datasets |
-| 4 | DP tradeoff curves across all ε values and domain types |
-| 5 | Downstream model impact experiments |
-| 6 | Submission to NeurIPS 2026 D&B track |
+| Phase | Duration | Deliverable |
+|---|---|---|
+| Schema construction | 4 weeks | 8 enterprise schemas with constraints |
+| Generator integration | 4 weeks | All baselines + our method |
+| Experiments | 6 weeks | All DAUT/RIC/privacy results |
+| Paper writing | 4 weeks | NeurIPS 2026 D&B submission |
+
+**Target venue**: NeurIPS 2026 Datasets & Benchmarks Track
+
+---
+
+## Open Questions & Risks
+
+| Risk | Likelihood | Mitigation |
+|---|---|---|
+| DP-SGD training instability | High | Gradient clipping + careful ε accounting |
+| Constraint validator completeness | Medium | Domain expert review of constraint rules |
+| Commercial generator access | Medium | MOSTLY AI academic license |
+| Fraud pattern rarity | High | Oversample fraud class; report F1 not accuracy |
+
+---
 
 ## Related Issues
 
-- Design doc GitHub issue: #35
-- Target conferences: see issues labeled `conference-prep`
-- Reproducibility package: see issues labeled `artifact-release`
+- Product integration: Anote synthetic data feature
+- Privacy/ethics: GDPR compliance framework
+- Reproducibility: DP accounting verification
+- Related work audit: SDGym, Syntheval, MOSTLY AI papers
