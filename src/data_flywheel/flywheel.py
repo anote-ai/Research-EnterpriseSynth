@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from data_flywheel.findings import (
     SEED_FINDINGS,
@@ -201,7 +201,6 @@ class DataFlywheelPipeline:
         deltas = [r.tstr_delta for r in results]
         hall_rates = [r.hallucination_report.hallucination_rate for r in results]
 
-        last_delta = deltas[-1]
         is_converging = all(abs(d) <= abs(deltas[0]) + 1e-9 for d in deltas)
         is_diverging = any(abs(d) > abs(deltas[0]) * 1.5 for d in deltas[1:])
         hall_growing = hall_rates[-1] > hall_rates[0] if len(hall_rates) > 1 else False

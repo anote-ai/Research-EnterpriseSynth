@@ -299,13 +299,9 @@ class TestSimulateNewFindings:
 
     def test_hallucination_rate_grows_with_iteration(self, seed_findings):
         import random
-        rng1 = random.Random(0)
-        rng2 = random.Random(0)
-        r1 = _simulate_new_findings(seed_findings, iteration=1, rng=rng1, base_hallucination_rate=0.1)
-        r5 = _simulate_new_findings(seed_findings * 4, iteration=5, rng=rng2, base_hallucination_rate=0.1)
-        hall_rate_1 = sum(1 for f in r1 if f.is_hallucinated) / len(r1)
+        r5 = _simulate_new_findings(seed_findings * 4, iteration=5, rng=random.Random(0), base_hallucination_rate=0.1)
         hall_rate_5 = sum(1 for f in r5 if f.is_hallucinated) / len(r5)
-        # With deterministic-ish RNG this is probabilistic; just check rate cap
+        # drift cap = base + 0.05*5 = 0.35; just verify it stays below hard cap
         assert hall_rate_5 <= 0.65
 
 
