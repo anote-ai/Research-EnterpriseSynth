@@ -50,7 +50,6 @@ class EvalResult:
 
 def _encode(df: pd.DataFrame, target_col: str) -> tuple[np.ndarray, np.ndarray]:
     """One-hot encode categoricals and return (X, y) numpy arrays."""
-    from sklearn.preprocessing import LabelEncoder
     X = df.drop(columns=[target_col]).copy()
     y = df[target_col].values.astype(int)
     # One-hot encode object/string columns
