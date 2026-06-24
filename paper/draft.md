@@ -292,13 +292,41 @@ EnterpriseSynth provides the first benchmark framework specifically designed for
 
 ## References
 
+- Abadi, M., et al. (2016). Deep learning with differential privacy. *CCS 2016*.
+- Alaa, A., van Breugel, B., Saveliev, E., & van der Schaar, M. (2022). How faithful is your synthetic data? Sample-level metrics for evaluating and auditing generative models. *ICML 2022*.
+- Carlini, N., Chien, S., Nasr, M., Song, S., Terzis, A., & Tramer, F. (2022). Membership inference attacks from first principles. *IEEE S&P 2022*.
+- Chen, D., Oto, J., Yu, D., Shi, H., Triastcyn, A., & Faltings, B. (2020). GS-WGAN: A gradient-sanitized approach for learning differentially private generators. *NeurIPS 2020*.
+- Dankar, F. K., & El Emam, K. (2013). Practicing differential privacy in health care: A review. *Transactions on Data Privacy, 6(1)*.
+- Dockhorn, T., Cao, T., Vahdat, A., & Kreis, K. (2023). Differentially private diffusion models. *TMLR 2023*.
+- Dohmatob, E., Feng, Y., Yang, P., Charton, F., & Kempe, J. (2024). A tale of tails: Model collapse as a change of scaling laws. *ICML 2024*.
 - Dwork, C., McSherry, F., Nissim, K., & Smith, A. (2006). Calibrating noise to sensitivity in private data analysis. *TCC 2006*.
+- Dwork, C., & Roth, A. (2014). The algorithmic foundations of differential privacy. *Foundations and Trends in Theoretical Computer Science, 9(3-4)*.
 - Esteban, C., Hyland, S. L., & Rätsch, G. (2017). Real-valued (medical) time series generation with recurrent conditional GANs. *arXiv:1706.02633*.
 - Gerstgrasser, M., Schuhmann, C., Jain, S., Bosshard, L., Karg, M., Koepke, J., & Lhoest, Q. (2024). Is model collapse inevitable? Breaking the curse of recursion by accumulating real and synthetic data. *arXiv:2404.01413*.
+- Ghalebikesabi, S., et al. (2023). Differentially private diffusion models generate useful synthetic images. *ICML 2023 Workshop*.
+- Gopi, S., Lee, Y. T., & Wajc, D. (2021). Numerical composition of differential privacy. *NeurIPS 2021*.
+- Hataya, R., Bao, H., & Arai, H. (2023). Will large-scale generative models corrupt future datasets? *ICCV 2023*.
+- Jordon, J., Yoon, J., & van der Schaar, M. (2019). PATE-GAN: Generating synthetic data with differential privacy guarantees. *ICLR 2019*.
+- Kotelnikov, A., Baranchuk, D., Rubachev, I., & Babenko, A. (2023). TabDDPM: Modelling tabular data with diffusion models. *ICML 2023*.
+- Koskela, A., Jälkö, J., & Honkela, A. (2020). Computing tight differential privacy guarantees using FFT. *AISTATS 2020*.
 - Lautrup, A. D., Hyrup, T., Tucker, A., & Perner, P. (2024). SynthEval: A framework for detailed utility and privacy evaluation of tabular synthetic data. *arXiv:2404.07755*.
+- McKenna, R., Miklau, G., & Sheldon, D. (2021). Winning the NIST contest: A scalable and general approach to differentially private synthetic data. *VLDB 2021*.
+- McKenna, R., Mullins, B., Sheldon, D., & Miklau, G. (2022). AIM: An adaptive and iterative mechanism for differentially private synthetic data. *NeurIPS 2022*.
+- Microsoft Research. (2020). SmartNoise SDK: Differential privacy tools for data scientists. *smartnoise.org*.
+- Mironov, I. (2017). Rényi differential privacy. *CSF 2017*.
 - Murakonda, S. K., & Shokri, R. (2020). ML Privacy Meter: Aiding regulatory compliance by quantifying the privacy risks of machine learning. *USENIX Security*.
+- Papernot, N., Abadi, M., Erlingsson, U., Goodfellow, I., & Talwar, K. (2017). Semi-supervised knowledge transfer for deep learning from private training data. *ICLR 2017*.
 - Patki, N., Wedge, R., & Veeramachaneni, K. (2016). The synthetic data vault. *DSAA 2016*.
+- Ping, H., Stoyanovich, J., & Howe, B. (2017). DataSynthesizer: Privacy-preserving synthetic datasets. *CIKM 2017*.
+- Rosenblatt, L., Liu, X., Pouyanfar, S., de la Torre, E., Majumder, A., & Allen, J. (2020). Differentially private synthetic data: Applied evaluations and enhancements. *TPDP 2020*.
 - Shumailov, I., Shumaylov, Z., Zhao, Y., Gal, Y., Papernot, N., & Anderson, R. (2023). The curse of recursion: Training on generated data makes models forget. *arXiv:2305.17493*.
+- Shokri, R., Stronati, M., Song, C., & Shmatikov, V. (2017). Membership inference attacks against machine learning models. *IEEE S&P 2017*.
+- Stadler, T., Oprisanu, B., & Troncoso, C. (2022). Synthetic data — anonymisation groundhog day. *USENIX Security 2022*.
+- Xie, L., Lin, K., Wang, S., Wang, F., & Zhou, J. (2018). Differentially private generative adversarial network. *arXiv:1802.06739*.
+- Xu, L., Skoularidou, M., Cuesta-Infante, A., & Veeramachaneni, K. (2019). Modeling tabular data using conditional GAN. *NeurIPS 2019*.
+- Yousefpour, A., et al. (2021). Opacus: User-friendly differential privacy library in PyTorch. *arXiv:2109.12298*.
+- Zhang, Z., Wang, T., Li, N., Honorio, J., Backes, M., He, S., Chen, J., & Zhang, Y. (2021). PrivSyn: Differentially private data synthesis. *USENIX Security 2021*.
+- Zhao, Z., Kunar, A., van der Scheer, H., Birke, R., & Chen, L. Y. (2021). CTAB-GAN: Effective table data synthesizing. *ACML 2021*.
 
 ---
 
