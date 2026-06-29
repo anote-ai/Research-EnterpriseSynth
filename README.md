@@ -4,6 +4,19 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+## Research Status
+
+This README and `DESIGN_DOC.md` currently describe two different research
+threads living in this repository: a differential-privacy synthetic-data
+utility benchmark (see `DESIGN_DOC.md` and `paper/draft.md`) and an OpenAPI-
+driven cold-start SFT trace generator (described below). See
+[`RESEARCH_STATUS.md`](RESEARCH_STATUS.md) for an explicit, honest breakdown of
+which results in this repo are real measured experiment outputs vs. calibrated
+simulations, and
+[`paper/blog_post_dp_utility_tradeoff.md`](paper/blog_post_dp_utility_tradeoff.md)
+for an accessible, non-academic writeup of the DP-utility tradeoff work that
+clearly marks projected vs. measured numbers.
+
 ## Cold-Start Motivation
 
 Fine-tuning LLM agents for enterprise tool-use requires thousands of high-quality (instruction, tool_call, response) traces — data that enterprises rarely have at day zero. EnterpriseSynth solves the cold-start problem by automatically generating verified SFT traces directly from OpenAPI schemas, without requiring any real user interactions or API calls.
