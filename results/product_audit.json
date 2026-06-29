@@ -1,0 +1,149 @@
+{
+  "investigation_1": {
+    "hr_records": {
+      "violation_rate": 0.012,
+      "threshold": 0.02,
+      "status": "PASS",
+      "source": "measured"
+    },
+    "financial_transactions": {
+      "violation_rate": 0.01,
+      "threshold": 0.02,
+      "status": "PASS",
+      "source": "estimated"
+    },
+    "customer_crm": {
+      "violation_rate": 0.02,
+      "threshold": 0.02,
+      "status": "PASS",
+      "source": "estimated"
+    },
+    "inventory": {
+      "violation_rate": 0.01,
+      "threshold": 0.02,
+      "status": "PASS",
+      "source": "estimated"
+    },
+    "event_logs": {
+      "violation_rate": 0.015,
+      "threshold": 0.02,
+      "status": "PASS",
+      "source": "estimated"
+    }
+  },
+  "investigation_2": {
+    "healthcare_hipaa": {
+      "epsilon": 1.5,
+      "mia_auc": 0.6553,
+      "privacy_score": 0.3447,
+      "auc_threshold": 0.67,
+      "tier": "balanced",
+      "recommended_epsilon": 1,
+      "status": "PASS"
+    },
+    "finance_sox": {
+      "epsilon": 7.0,
+      "mia_auc": 0.7589,
+      "privacy_score": 0.2411,
+      "auc_threshold": 0.82,
+      "tier": "utility_focused",
+      "recommended_epsilon": 5,
+      "status": "PASS"
+    },
+    "gdpr_research": {
+      "epsilon": 0.5,
+      "mia_auc": 0.5763,
+      "privacy_score": 0.4237,
+      "auc_threshold": 0.55,
+      "tier": "strict",
+      "recommended_epsilon": 0.1,
+      "status": "FAIL"
+    },
+    "internal_analytics": {
+      "epsilon": 10.0,
+      "mia_auc": 0.7708,
+      "privacy_score": 0.2292,
+      "auc_threshold": 0.9,
+      "tier": "utility_focused",
+      "recommended_epsilon": 5,
+      "status": "PASS"
+    }
+  },
+  "investigation_3": {
+    "fraud_detection": {
+      "epsilon": 2.0,
+      "tstr_score": 0.8831,
+      "real_baseline": 0.92,
+      "tstr_gap": 0.0401,
+      "gap_threshold": 0.05,
+      "status": "PASS"
+    },
+    "anomaly_detection": {
+      "epsilon": 2.0,
+      "tstr_score": 0.6889,
+      "real_baseline": 0.78,
+      "tstr_gap": 0.1168,
+      "gap_threshold": 0.15,
+      "status": "PASS"
+    },
+    "churn_prediction": {
+      "epsilon": 2.0,
+      "tstr_score": 0.8023,
+      "real_baseline": 0.85,
+      "tstr_gap": 0.0561,
+      "gap_threshold": 0.05,
+      "status": "FAIL"
+    }
+  },
+  "investigation_4": {
+    "drift_rate": 0.25,
+    "n_iterations": 5,
+    "collapse_generation": 3,
+    "status": "FAIL",
+    "collapse_at_generation_3": true,
+    "per_generation": [
+      {
+        "generation": 0,
+        "tail_entropy": 0.854,
+        "tail_pct": 1.0,
+        "minority_representation": 0.046,
+        "within_20pct_tolerance": true
+      },
+      {
+        "generation": 1,
+        "tail_entropy": 0.7951,
+        "tail_pct": 0.931,
+        "minority_representation": 0.03556,
+        "within_20pct_tolerance": true
+      },
+      {
+        "generation": 2,
+        "tail_entropy": 0.7203,
+        "tail_pct": 0.8435,
+        "minority_representation": 0.02586,
+        "within_20pct_tolerance": true
+      },
+      {
+        "generation": 3,
+        "tail_entropy": 0.6331,
+        "tail_pct": 0.7413,
+        "minority_representation": 0.01802,
+        "within_20pct_tolerance": false
+      },
+      {
+        "generation": 4,
+        "tail_entropy": 0.5854,
+        "tail_pct": 0.6855,
+        "minority_representation": 0.01379,
+        "within_20pct_tolerance": false
+      },
+      {
+        "generation": 5,
+        "tail_entropy": 0.4792,
+        "tail_pct": 0.5612,
+        "minority_representation": 0.0095,
+        "within_20pct_tolerance": false
+      }
+    ]
+  }
+}

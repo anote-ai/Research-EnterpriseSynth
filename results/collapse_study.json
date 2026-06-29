@@ -1,0 +1,302 @@
+{
+  "0.1": {
+    "collapse_rate": 0.1,
+    "n_generations": 5,
+    "n_records": 500,
+    "baseline_tail_entropy": 0.854,
+    "baseline_minority_representation": 0.046,
+    "per_generation": [
+      {
+        "generation": 0,
+        "n_records": 500,
+        "tail_entropy": 0.854,
+        "tail_pct_of_baseline": 1.0,
+        "coverage_entropy": 0.6704,
+        "coverage_pct_of_baseline": 1.0,
+        "minority_representation": 0.046,
+        "tail_divergence": 0.0
+      },
+      {
+        "generation": 1,
+        "n_records": 486,
+        "tail_entropy": 0.8234,
+        "tail_pct_of_baseline": 0.9642,
+        "coverage_entropy": 0.6545,
+        "coverage_pct_of_baseline": 0.9763,
+        "minority_representation": 0.03909,
+        "tail_divergence": 0.0011
+      },
+      {
+        "generation": 2,
+        "n_records": 480,
+        "tail_entropy": 0.8117,
+        "tail_pct_of_baseline": 0.9505,
+        "coverage_entropy": 0.644,
+        "coverage_pct_of_baseline": 0.9605,
+        "minority_representation": 0.0375,
+        "tail_divergence": 0.0026
+      },
+      {
+        "generation": 3,
+        "n_records": 472,
+        "tail_entropy": 0.7981,
+        "tail_pct_of_baseline": 0.9346,
+        "coverage_entropy": 0.6348,
+        "coverage_pct_of_baseline": 0.9468,
+        "minority_representation": 0.03602,
+        "tail_divergence": 0.0038
+      },
+      {
+        "generation": 4,
+        "n_records": 467,
+        "tail_entropy": 0.7791,
+        "tail_pct_of_baseline": 0.9124,
+        "coverage_entropy": 0.6248,
+        "coverage_pct_of_baseline": 0.9319,
+        "minority_representation": 0.03212,
+        "tail_divergence": 0.0065
+      },
+      {
+        "generation": 5,
+        "n_records": 461,
+        "tail_entropy": 0.766,
+        "tail_pct_of_baseline": 0.897,
+        "coverage_entropy": 0.6223,
+        "coverage_pct_of_baseline": 0.9282,
+        "minority_representation": 0.03037,
+        "tail_divergence": 0.0069
+      }
+    ],
+    "threshold_crossings": {
+      "warning": 5,
+      "moderate": null,
+      "critical": null
+    },
+    "minority_depletion_generation": null
+  },
+  "0.2": {
+    "collapse_rate": 0.2,
+    "n_generations": 5,
+    "n_records": 500,
+    "baseline_tail_entropy": 0.854,
+    "baseline_minority_representation": 0.046,
+    "per_generation": [
+      {
+        "generation": 0,
+        "n_records": 500,
+        "tail_entropy": 0.854,
+        "tail_pct_of_baseline": 1.0,
+        "coverage_entropy": 0.6704,
+        "coverage_pct_of_baseline": 1.0,
+        "minority_representation": 0.046,
+        "tail_divergence": 0.0
+      },
+      {
+        "generation": 1,
+        "n_records": 485,
+        "tail_entropy": 0.8234,
+        "tail_pct_of_baseline": 0.9642,
+        "coverage_entropy": 0.6552,
+        "coverage_pct_of_baseline": 0.9774,
+        "minority_representation": 0.03918,
+        "tail_divergence": 0.0011
+      },
+      {
+        "generation": 2,
+        "n_records": 472,
+        "tail_entropy": 0.7931,
+        "tail_pct_of_baseline": 0.9287,
+        "coverage_entropy": 0.6369,
+        "coverage_pct_of_baseline": 0.9499,
+        "minority_representation": 0.03602,
+        "tail_divergence": 0.0043
+      },
+      {
+        "generation": 3,
+        "n_records": 455,
+        "tail_entropy": 0.706,
+        "tail_pct_of_baseline": 0.8267,
+        "coverage_entropy": 0.6066,
+        "coverage_pct_of_baseline": 0.9047,
+        "minority_representation": 0.02857,
+        "tail_divergence": 0.0194
+      },
+      {
+        "generation": 4,
+        "n_records": 449,
+        "tail_entropy": 0.6784,
+        "tail_pct_of_baseline": 0.7945,
+        "coverage_entropy": 0.6006,
+        "coverage_pct_of_baseline": 0.8959,
+        "minority_representation": 0.0245,
+        "tail_divergence": 0.0239
+      },
+      {
+        "generation": 5,
+        "n_records": 436,
+        "tail_entropy": 0.6502,
+        "tail_pct_of_baseline": 0.7614,
+        "coverage_entropy": 0.5898,
+        "coverage_pct_of_baseline": 0.8797,
+        "minority_representation": 0.02294,
+        "tail_divergence": 0.0304
+      }
+    ],
+    "threshold_crossings": {
+      "warning": 3,
+      "moderate": null,
+      "critical": null
+    },
+    "minority_depletion_generation": null
+  },
+  "0.3": {
+    "collapse_rate": 0.3,
+    "n_generations": 5,
+    "n_records": 500,
+    "baseline_tail_entropy": 0.854,
+    "baseline_minority_representation": 0.046,
+    "per_generation": [
+      {
+        "generation": 0,
+        "n_records": 500,
+        "tail_entropy": 0.854,
+        "tail_pct_of_baseline": 1.0,
+        "coverage_entropy": 0.6704,
+        "coverage_pct_of_baseline": 1.0,
+        "minority_representation": 0.046,
+        "tail_divergence": 0.0
+      },
+      {
+        "generation": 1,
+        "n_records": 471,
+        "tail_entropy": 0.7754,
+        "tail_pct_of_baseline": 0.908,
+        "coverage_entropy": 0.6375,
+        "coverage_pct_of_baseline": 0.9509,
+        "minority_representation": 0.03397,
+        "tail_divergence": 0.0056
+      },
+      {
+        "generation": 2,
+        "n_records": 453,
+        "tail_entropy": 0.7222,
+        "tail_pct_of_baseline": 0.8457,
+        "coverage_entropy": 0.6193,
+        "coverage_pct_of_baseline": 0.9238,
+        "minority_representation": 0.0287,
+        "tail_divergence": 0.0144
+      },
+      {
+        "generation": 3,
+        "n_records": 433,
+        "tail_entropy": 0.6495,
+        "tail_pct_of_baseline": 0.7606,
+        "coverage_entropy": 0.5939,
+        "coverage_pct_of_baseline": 0.8858,
+        "minority_representation": 0.02309,
+        "tail_divergence": 0.0302
+      },
+      {
+        "generation": 4,
+        "n_records": 418,
+        "tail_entropy": 0.5248,
+        "tail_pct_of_baseline": 0.6146,
+        "coverage_entropy": 0.5659,
+        "coverage_pct_of_baseline": 0.844,
+        "minority_representation": 0.01914,
+        "tail_divergence": 0.0716
+      },
+      {
+        "generation": 5,
+        "n_records": 401,
+        "tail_entropy": 0.3913,
+        "tail_pct_of_baseline": 0.4583,
+        "coverage_entropy": 0.5468,
+        "coverage_pct_of_baseline": 0.8156,
+        "minority_representation": 0.01746,
+        "tail_divergence": 0.1343
+      }
+    ],
+    "threshold_crossings": {
+      "warning": 2,
+      "moderate": 4,
+      "critical": 5
+    },
+    "minority_depletion_generation": null
+  },
+  "0.4": {
+    "collapse_rate": 0.4,
+    "n_generations": 5,
+    "n_records": 500,
+    "baseline_tail_entropy": 0.854,
+    "baseline_minority_representation": 0.046,
+    "per_generation": [
+      {
+        "generation": 0,
+        "n_records": 500,
+        "tail_entropy": 0.854,
+        "tail_pct_of_baseline": 1.0,
+        "coverage_entropy": 0.6704,
+        "coverage_pct_of_baseline": 1.0,
+        "minority_representation": 0.046,
+        "tail_divergence": 0.0
+      },
+      {
+        "generation": 1,
+        "n_records": 469,
+        "tail_entropy": 0.7707,
+        "tail_pct_of_baseline": 0.9025,
+        "coverage_entropy": 0.6356,
+        "coverage_pct_of_baseline": 0.9481,
+        "minority_representation": 0.03412,
+        "tail_divergence": 0.0067
+      },
+      {
+        "generation": 2,
+        "n_records": 446,
+        "tail_entropy": 0.6972,
+        "tail_pct_of_baseline": 0.8165,
+        "coverage_entropy": 0.608,
+        "coverage_pct_of_baseline": 0.9069,
+        "minority_representation": 0.02466,
+        "tail_divergence": 0.0174
+      },
+      {
+        "generation": 3,
+        "n_records": 416,
+        "tail_entropy": 0.468,
+        "tail_pct_of_baseline": 0.5481,
+        "coverage_entropy": 0.5578,
+        "coverage_pct_of_baseline": 0.832,
+        "minority_representation": 0.00962,
+        "tail_divergence": 0.0765
+      },
+      {
+        "generation": 4,
+        "n_records": 407,
+        "tail_entropy": 0.468,
+        "tail_pct_of_baseline": 0.5481,
+        "coverage_entropy": 0.563,
+        "coverage_pct_of_baseline": 0.8397,
+        "minority_representation": 0.00983,
+        "tail_divergence": 0.0765
+      },
+      {
+        "generation": 5,
+        "n_records": 387,
+        "tail_entropy": 0.4096,
+        "tail_pct_of_baseline": 0.4796,
+        "coverage_entropy": 0.5482,
+        "coverage_pct_of_baseline": 0.8177,
+        "minority_representation": 0.00775,
+        "tail_divergence": 0.0964
+      }
+    ],
+    "threshold_crossings": {
+      "warning": 2,
+      "moderate": 3,
+      "critical": 5
+    },
+    "minority_depletion_generation": null
+  }
+}
