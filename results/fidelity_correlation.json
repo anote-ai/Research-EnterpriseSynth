@@ -1,0 +1,18 @@
+{
+  "tabular": {
+    "asset_type": "tabular_hr",
+    "spearman_rho": {
+      "constraint_violation_rate": -1.0,
+      "marginal_fidelity_loss": -1.0,
+      "joint_fidelity_loss": -1.0
+    }
+  },
+  "documents": {
+    "asset_type": "documents",
+    "spearman_rho": {
+      "bertscore": 1.0,
+      "mauve": 0.9762,
+      "ner_consistency": 1.0
+    }
+  }
+}

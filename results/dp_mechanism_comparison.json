@@ -1,0 +1,170 @@
+{
+  "0.5": [
+    {
+      "mechanism": "none",
+      "epsilon": 0.5,
+      "constraint_violation_rate": 0.0,
+      "salary_mae": 0.0,
+      "age_mae": 0.0,
+      "age_birthyear_consistency": 1.0
+    },
+    {
+      "mechanism": "gaussian",
+      "epsilon": 0.5,
+      "constraint_violation_rate": 0.92,
+      "salary_mae": 441635.81,
+      "age_mae": 7.54,
+      "age_birthyear_consistency": 0.08
+    },
+    {
+      "mechanism": "laplace",
+      "epsilon": 0.5,
+      "constraint_violation_rate": 0.7033,
+      "salary_mae": 137645.78,
+      "age_mae": 2.203,
+      "age_birthyear_consistency": 0.2967
+    },
+    {
+      "mechanism": "discrete",
+      "epsilon": 0.5,
+      "constraint_violation_rate": 0.64,
+      "salary_mae": 128985.77,
+      "age_mae": 1.81,
+      "age_birthyear_consistency": 0.36
+    },
+    {
+      "mechanism": "randomized_response",
+      "epsilon": 0.5,
+      "constraint_violation_rate": 0.92,
+      "salary_mae": 441635.81,
+      "age_mae": 7.54,
+      "age_birthyear_consistency": 0.08
+    }
+  ],
+  "1.0": [
+    {
+      "mechanism": "none",
+      "epsilon": 1.0,
+      "constraint_violation_rate": 0.0,
+      "salary_mae": 0.0,
+      "age_mae": 0.0,
+      "age_birthyear_consistency": 1.0
+    },
+    {
+      "mechanism": "gaussian",
+      "epsilon": 1.0,
+      "constraint_violation_rate": 0.82,
+      "salary_mae": 236615.51,
+      "age_mae": 3.813,
+      "age_birthyear_consistency": 0.18
+    },
+    {
+      "mechanism": "laplace",
+      "epsilon": 1.0,
+      "constraint_violation_rate": 0.44,
+      "salary_mae": 80666.35,
+      "age_mae": 1.07,
+      "age_birthyear_consistency": 0.56
+    },
+    {
+      "mechanism": "discrete",
+      "epsilon": 1.0,
+      "constraint_violation_rate": 0.3733,
+      "salary_mae": 74276.5,
+      "age_mae": 0.913,
+      "age_birthyear_consistency": 0.6267
+    },
+    {
+      "mechanism": "randomized_response",
+      "epsilon": 1.0,
+      "constraint_violation_rate": 0.82,
+      "salary_mae": 236615.51,
+      "age_mae": 3.813,
+      "age_birthyear_consistency": 0.18
+    }
+  ],
+  "2.0": [
+    {
+      "mechanism": "none",
+      "epsilon": 2.0,
+      "constraint_violation_rate": 0.0,
+      "salary_mae": 0.0,
+      "age_mae": 0.0,
+      "age_birthyear_consistency": 1.0
+    },
+    {
+      "mechanism": "gaussian",
+      "epsilon": 2.0,
+      "constraint_violation_rate": 0.6533,
+      "salary_mae": 132000.34,
+      "age_mae": 1.893,
+      "age_birthyear_consistency": 0.3467
+    },
+    {
+      "mechanism": "laplace",
+      "epsilon": 2.0,
+      "constraint_violation_rate": 0.18,
+      "salary_mae": 46418.54,
+      "age_mae": 0.503,
+      "age_birthyear_consistency": 0.82
+    },
+    {
+      "mechanism": "discrete",
+      "epsilon": 2.0,
+      "constraint_violation_rate": 0.1,
+      "salary_mae": 42221.47,
+      "age_mae": 0.41,
+      "age_birthyear_consistency": 0.9
+    },
+    {
+      "mechanism": "randomized_response",
+      "epsilon": 2.0,
+      "constraint_violation_rate": 0.6533,
+      "salary_mae": 132000.34,
+      "age_mae": 1.893,
+      "age_birthyear_consistency": 0.3467
+    }
+  ],
+  "5.0": [
+    {
+      "mechanism": "none",
+      "epsilon": 5.0,
+      "constraint_violation_rate": 0.0,
+      "salary_mae": 0.0,
+      "age_mae": 0.0,
+      "age_birthyear_consistency": 1.0
+    },
+    {
+      "mechanism": "gaussian",
+      "epsilon": 5.0,
+      "constraint_violation_rate": 0.2667,
+      "salary_mae": 63690.65,
+      "age_mae": 0.753,
+      "age_birthyear_consistency": 0.7333
+    },
+    {
+      "mechanism": "laplace",
+      "epsilon": 5.0,
+      "constraint_violation_rate": 0.0067,
+      "salary_mae": 20170.1,
+      "age_mae": 0.097,
+      "age_birthyear_consistency": 0.9933
+    },
+    {
+      "mechanism": "discrete",
+      "epsilon": 5.0,
+      "constraint_violation_rate": 0.0,
+      "salary_mae": 18182.8,
+      "age_mae": 0.03,
+      "age_birthyear_consistency": 1.0
+    },
+    {
+      "mechanism": "randomized_response",
+      "epsilon": 5.0,
+      "constraint_violation_rate": 0.2667,
+      "salary_mae": 63690.65,
+      "age_mae": 0.753,
+      "age_birthyear_consistency": 0.7333
+    }
+  ]
+}
