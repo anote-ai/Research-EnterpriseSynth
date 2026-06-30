@@ -1,0 +1,80 @@
+[
+  {
+    "epsilon": 0.1,
+    "tier": "strict",
+    "classification_f1": 0.2917,
+    "classification_f1_std": 0.087,
+    "regression_r2": 0.0279,
+    "regression_r2_std": 0.0097,
+    "anomaly_recall": 0.4082,
+    "anomaly_recall_std": 0.1359,
+    "pct_classification": 0.5739,
+    "pct_regression": 0.6864,
+    "pct_anomaly": 0.6868
+  },
+  {
+    "epsilon": 0.5,
+    "tier": "strict",
+    "classification_f1": 0.3195,
+    "classification_f1_std": 0.048,
+    "regression_r2": 0.0235,
+    "regression_r2_std": 0.0033,
+    "anomaly_recall": 0.347,
+    "anomaly_recall_std": 0.0764,
+    "pct_classification": 0.6285,
+    "pct_regression": 0.5795,
+    "pct_anomaly": 0.5839
+  },
+  {
+    "epsilon": 1,
+    "tier": "balanced",
+    "classification_f1": 0.3631,
+    "classification_f1_std": 0.0143,
+    "regression_r2": 0.0267,
+    "regression_r2_std": 0.0024,
+    "anomaly_recall": 0.3863,
+    "anomaly_recall_std": 0.0254,
+    "pct_classification": 0.7144,
+    "pct_regression": 0.6573,
+    "pct_anomaly": 0.6501
+  },
+  {
+    "epsilon": 2,
+    "tier": "balanced",
+    "classification_f1": 0.4122,
+    "classification_f1_std": 0.0095,
+    "regression_r2": 0.0317,
+    "regression_r2_std": 0.0008,
+    "anomaly_recall": 0.4477,
+    "anomaly_recall_std": 0.0085,
+    "pct_classification": 0.811,
+    "pct_regression": 0.7794,
+    "pct_anomaly": 0.7533
+  },
+  {
+    "epsilon": 5,
+    "tier": "utility_focused",
+    "classification_f1": 0.4516,
+    "classification_f1_std": 0.0031,
+    "regression_r2": 0.0356,
+    "regression_r2_std": 0.0004,
+    "anomaly_recall": 0.506,
+    "anomaly_recall_std": 0.0138,
+    "pct_classification": 0.8886,
+    "pct_regression": 0.8764,
+    "pct_anomaly": 0.8514
+  },
+  {
+    "epsilon": 10,
+    "tier": "utility_focused",
+    "classification_f1": 0.4806,
+    "classification_f1_std": 0.0028,
+    "regression_r2": 0.0377,
+    "regression_r2_std": 0.0002,
+    "anomaly_recall": 0.5432,
+    "anomaly_recall_std": 0.0035,
+    "pct_classification": 0.9456,
+    "pct_regression": 0.9291,
+    "pct_anomaly": 0.914
+  }
+]

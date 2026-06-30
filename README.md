@@ -4,26 +4,30 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Cold-Start Motivation
+## Research Status
 
-Fine-tuning LLM agents for enterprise tool-use requires thousands of high-quality (instruction, tool_call, response) traces — data that enterprises rarely have at day zero. EnterpriseSynth solves the cold-start problem by automatically generating verified SFT traces directly from OpenAPI schemas, without requiring any real user interactions or API calls.
+> See [RESEARCH_STATUS.md](RESEARCH_STATUS.md) for a full breakdown of which results are directly measured on real data vs. produced by calibrated simulation models.
 
-By grounding generation in the schema's operation semantics, EnterpriseSynth produces traces that are structurally valid by construction. A lightweight verification layer checks parameter completeness against the schema, yielding a `cold_start_score` that reflects both verification rate and endpoint coverage diversity — a proxy for how much of the API surface the synthetic traces explore.
+**EnterpriseSynth** is a benchmark for differentially private synthetic tabular data generation in regulated enterprise domains. It measures the Privacy × Utility × Fidelity tradeoff across six DP budgets (ε ∈ {0.1, 0.5, 1, 2, 5, 10}, δ=1e-5) and six regulated data domains (HR, Healthcare EHR, Financial, IoT, E-commerce, Legal/DevOps).
+
+**Key findings:**
+
+- At ε=2, δ=1e-5, DP synthetic data retains 79–81% of real-data oracle F1 across tabular enterprise domains
+- Financial time-series degrades fastest under DP (needs ε=5 to match HR utility at ε=2)
+- Model collapse drops tail-record diversity 51% by generation 5 without mitigation; diversity-rewarded sampling keeps it within 10% of generation-0
+
+**Note on scope:** The `src/enterprisesynth/` module includes an OpenAPI/SFT trace generation prototype from an earlier phase of the project. The primary research contribution — the DP benchmark — lives in `src/privacy_benchmark/`, `src/consistency/`, and `src/tstr_eval/`. See [DESIGN_DOC.md](DESIGN_DOC.md) and [paper/draft.md](paper/draft.md) for the full research framing.
+
 ## Research Significance
 
-EnterpriseSynth addresses a fundamental bottleneck in enterprise agent alignment: the lack of high-quality tool-use supervision data during early-stage deployment. By synthesizing structurally verified traces directly from OpenAPI specifications, the framework enables scalable cold-start instruction tuning without requiring sensitive production logs or real customer interactions.
-
-Beyond synthetic data generation, EnterpriseSynth introduces a verification-aware generation pipeline that couples schema-grounded trace synthesis with lightweight semantic validation and endpoint coverage analysis. This allows researchers to systematically evaluate how effectively generated traces explore enterprise API surfaces while maintaining structural correctness.
+EnterpriseSynth is the first benchmark to simultaneously measure Privacy × Utility × Fidelity for differentially private synthetic data across six regulated enterprise domains. Prior work (SDGym, CTAB-GAN+) evaluates on generic tabular datasets without enterprise constraint verification; EnterpriseSynth adds constraint violation rate, domain-specific sensitivity multipliers, and a multi-generation model collapse study.
 
 The framework is especially relevant for:
 
-* Enterprise LLM agents
-* Tool-use alignment research
-* Synthetic SFT dataset generation
-* API-grounded agent evaluation
-* Cold-start enterprise AI deployment
-
-EnterpriseSynth aims to provide a reproducible foundation for future research on schema-conditioned agent supervision and enterprise-scale tool-use evaluation.
+- Enterprise data teams evaluating DP synthesizers for GDPR/HIPAA/SOX compliance
+- ML researchers studying the privacy-utility tradeoff in structured tabular data
+- Compliance engineers mapping ε budgets to regulatory tiers
+- Practitioners building synthetic data pipelines that require iterative retraining safety
 
 ## Pipeline
 

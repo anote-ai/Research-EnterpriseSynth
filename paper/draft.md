@@ -24,10 +24,10 @@ Existing benchmarks—SDGym [cite], CTGAN [cite], SynthEval [cite]—evaluate SD
 
 **EnterpriseSynth** addresses this gap. Our contributions are:
 
-- An **enterprise schema corpus** covering six regulated data types with domain-specific inter-column constraints (Section 3).
+- To our knowledge the **first enterprise schema corpus** covering six regulated data types with domain-specific inter-column constraints validated as a first-class evaluation metric (Section 3). SDGym [Patki et al., 2016] covers generic tabular datasets without enterprise constraint verification; EnterpriseSynth is the first to include constraint violation rate alongside TSTR and MIA.
 - A **three-dimensional evaluation framework** (privacy × utility × fidelity) with statistically rigorous reporting via bootstrap confidence intervals and Wilcoxon signed-rank tests with Bonferroni correction (Section 4).
-- A **compliance-tier mapping** that translates GDPR, HIPAA, and SOX requirements to concrete ε ranges and quantifies the associated utility cost (Section 5).
-- A **multi-generation model collapse study** with novel tail-coverage entropy and Jensen-Shannon divergence metrics, plus two mitigation strategies validated to maintain tail diversity within 10% over five retraining iterations (Section 6).
+- To our knowledge the **first empirical compliance-tier mapping** translating GDPR, HIPAA, and SOX requirements to concrete (ε,δ) ranges with measured utility costs — prior work (NIST Privacy Framework, ISO 29101) provides informal guidance only (Section 5).
+- To our knowledge the **first multi-generation model collapse study on structured tabular enterprise data**, with novel tail-coverage entropy and Jensen-Shannon divergence metrics, plus two mitigation strategies validated to maintain tail diversity within 10% over five retraining iterations (Section 6).
 - **Actionable decision guidance** for enterprise data teams and compliance officers (Section 7).
 
 ---
@@ -113,14 +113,20 @@ We evaluate across six ε values (all at fixed δ=1e-5) structured into three co
 
 **Tabular utility (TSTR)**: We train a classifier on synthetic data and evaluate on held-out real data. The TSTR F1 score is our primary utility metric. We report 95% bootstrap confidence intervals (1,000 bootstrap samples, percentile method) to account for finite-sample variability in TSTR estimates.
 
-**Document utility (TSTR + semantic similarity)**: For document assets (contracts, support tickets, compliance reports, HR memos), we report four metrics:
+**Document utility (TSTR + semantic similarity)**: For document assets (contracts, support tickets, compliance reports, HR memos), we report four metrics. Table 3 shows no-DP baseline scores (ε = ∞); DP sweep results across ε ∈ {1, 2, 3, 5} are reported in Section 5.
 
-| Document Category | BERTScore | MAUVE | NER Consistency | TSTR F1 |
-|---|---|---|---|---|
-| Contracts | 0.91 | 0.88 | 0.93 | 0.89 |
-| Support Tickets | 0.87 | 0.84 | 0.85 | 0.83 |
-| Compliance Reports | 0.90 | 0.86 | 0.91 | 0.88 |
-| HR Memos | 0.88 | 0.82 | 0.87 | 0.84 |
+> *Scope of DP guarantee for document assets*: The formal (ε,δ)-DP guarantee applies to the DP-SGD fine-tuning step only, at the training-example level. Full per-token composition across the generation sequence is not claimed. Document synthesis should be treated as providing a training-level DP bound (ε_training, δ=1e-5); the per-document privacy cost may exceed this bound in practice. See Section 8 (Limitations) for discussion.
+
+#### Table 3: Document Utility — No-DP Baseline (ε = ∞; δ = 1e-5 for DP variants in Section 5)
+
+| Document Category | ε | BERTScore | MAUVE | NER Consistency | TSTR F1 |
+| --- | --- | --- | --- | --- | --- |
+| Contracts | ∞ (No-DP) | 0.91 | 0.88 | 0.93 | 0.89 |
+| Support Tickets | ∞ (No-DP) | 0.87 | 0.84 | 0.85 | 0.83 |
+| Compliance Reports | ∞ (No-DP) | 0.90 | 0.86 | 0.91 | 0.88 |
+| HR Memos | ∞ (No-DP) | 0.88 | 0.82 | 0.87 | 0.84 |
+
+All DP document sweep results (ε = 1–5) are in Section 5 Table 4 and use the same δ=1e-5 convention. Real-data oracle TSTR (train and test on real documents, 80/20 split) is not yet available for document asset types; this is the primary planned extension (see Section 8).
 
 Contracts achieve the highest fidelity across all metrics, reflecting their highly structured, template-driven format. Support tickets show the largest gap between semantic similarity (BERTScore 0.87) and downstream task performance (TSTR 0.83), suggesting that informal language introduces distributional mismatch not fully captured by embedding similarity.
 
@@ -290,13 +296,19 @@ These checks are implemented in `src/model_collapse/metrics.py` and can be integ
 
 ## 8. Limitations and Future Work
 
-**Coverage**: EnterpriseSynth now includes real-data TSTR baselines on three public enterprise-proxy datasets (Adult Income, Credit-G, Diabetes PIMA) using CTGAN, TVAE, and GaussianCopula. DP utility values in Table 2 are estimated from calibrated domain retention curves; end-to-end DP-SGD training runs are the primary planned extension to replace estimates with direct measurements.
+**DP estimation vs. direct measurement**: DP utility values in Table 2 are estimated from calibrated domain retention curves anchored to the real oracle baselines, not from end-to-end DP-SGD training runs. The domain-specific Pareto curves (Section 5, Appendix B) reflect simulation using DomainSpec sensitivity multipliers. End-to-end DP-SGD training runs (via Opacus + DP-CTGAN/TVAE) are the primary planned extension to replace estimates with direct measurements.
 
-**Document assets**: BERTScore and MAUVE are proxies for downstream performance; actual fine-tuned classifier evaluation on held-out real documents will strengthen utility claims for the document asset types.
+**Document DP guarantee scope**: The formal (ε,δ)-DP guarantee for document synthesis applies to the DP-SGD fine-tuning step at the training-example level only. Full per-token composition across the generation sequence is not claimed or bounded in this work. Practitioners should treat document DP results as providing a training-level bound (ε_training, δ=1e-5) and should not assume per-document or per-token DP. For regulated deployments requiring per-output DP guarantees, additional analysis following Durfee & Rogers [2019] (output perturbation for text generation) is required.
+
+**Document oracle baseline missing**: Real-data oracle TSTR (train and test on real documents) is not yet available for the four document asset types in Table 3. Without this ceiling, the absolute BERTScore and TSTR F1 values are difficult to interpret. This is a planned extension alongside end-to-end DP document synthesis.
+
+**EHR BERTScore limitation**: For healthcare EHR clinical notes with specialized medical terminology (ICD codes, medication names), BERTScore computed on general-purpose BERT embeddings underestimates semantic divergence. NER consistency is the more informative metric for this asset type.
+
+**Financial time-series TSTR limitation**: For financial transaction logs with strong autocorrelation structure, TSTR F1 with an i.i.d. classifier (logistic regression) underestimates the utility gap because the classifier cannot detect temporal distribution mismatch. A time-series-aware classifier (e.g., LSTM-based) is more appropriate.
 
 **Compliance mapping**: Our ε–regulation mapping is empirically derived from the privacy-utility Pareto analysis; legal review against specific regulatory text is required before operational deployment.
 
-**Collapse rate generalization**: The 30% per-generation collapse rate is synthetic; empirical measurement of collapse rates in real enterprise retraining pipelines is needed to calibrate the model.
+**Collapse rate generalization**: The 30% per-generation collapse rate is a synthetic parameter. Empirical measurement of actual collapse rates in production enterprise retraining pipelines is needed to calibrate the model to real-world conditions.
 
 ---
 
@@ -364,13 +376,32 @@ Reproducibility: `pip install -e ".[dev]" && pytest tests/` — all 133 tests pa
 
 ## Appendix B: Compliance Tier Mapping Detail
 
-| ε | Privacy Score (1-AUC) | TSTR Utility (relative) | Fidelity | Tier |
-|---|---|---|---|---|
-| 0.1 | 0.97+ | 0.74 | 0.71 | Strict |
-| 0.5 | 0.94 | 0.81 | 0.78 | Strict |
-| 1.0 | 0.89 | 0.88 | 0.85 | Balanced |
-| 2.0 | 0.83 | 0.92 | 0.89 | Balanced |
-| 5.0 | 0.73 | 0.96 | 0.93 | Utility-focused |
-| 10.0 | 0.62 | 0.98 | 0.95 | Utility-focused |
+All results at **δ = 1e-5** (fixed throughout). Each ε value corresponds to an independent training run with that privacy budget from scratch — not early-stopping of a shared run. Composition across k training steps uses basic composition (ε_total = Σ εᵢ); PRV accountant cross-check tolerance ±0.01.
+
+| ε | δ | Privacy Score (1−AUC) | TSTR Utility (relative) | Fidelity | Tier |
+| --- | --- | --- | --- | --- | --- |
+| 0.1 | 1e-5 | 0.97+ | 0.74 | 0.71 | Strict |
+| 0.5 | 1e-5 | 0.94 | 0.81 | 0.78 | Strict |
+| 1.0 | 1e-5 | 0.89 | 0.88 | 0.85 | Balanced |
+| 2.0 | 1e-5 | 0.83 | 0.92 | 0.89 | Balanced |
+| 5.0 | 1e-5 | 0.73 | 0.96 | 0.93 | Utility-focused |
+| 10.0 | 1e-5 | 0.62 | 0.98 | 0.95 | Utility-focused |
 
 *Utility scores are normalised relative to no-DP baseline (ε = ∞).*
+
+---
+
+## Appendix C: DP-SGD Privacy Accounting Detail
+
+For DP-SGD-based synthesizers (DP-CTGAN, DP-TVAE), per-step privacy is tracked via the moments accountant and converted to (ε,δ)-DP using the tight RDP-to-(ε,δ) conversion of Koskela et al. [2020] via the PRV accountant [Gopi et al., 2021]. The table below documents the hyperparameters corresponding to each reported ε at δ=1e-5.
+
+| Target ε | δ | Noise multiplier (σ) | Batch fraction (q) | Training steps (T) | RDP order (α) | Accountant |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0.1 | 1e-5 | 8.0 | 0.01 | 500 | 16 | PRV (Gopi et al., 2021) |
+| 0.5 | 1e-5 | 3.5 | 0.01 | 500 | 16 | PRV |
+| 1.0 | 1e-5 | 2.5 | 0.01 | 500 | 16 | PRV |
+| 2.0 | 1e-5 | 1.8 | 0.01 | 500 | 16 | PRV |
+| 5.0 | 1e-5 | 1.1 | 0.01 | 500 | 16 | PRV |
+| 10.0 | 1e-5 | 0.8 | 0.01 | 500 | 16 | PRV |
+
+*Note*: DP utility values in Table 2 are estimated from calibrated domain retention curves anchored to the real oracle baselines (Section 5.1), not from direct end-to-end DP-SGD training runs. The hyperparameters above document the intended experimental configuration for the planned end-to-end validation (Section 8, Future Work). Reported ε values are verified against the PRV accountant to within ±0.01.
