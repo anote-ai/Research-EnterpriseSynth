@@ -4,30 +4,82 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Research Status
+When should an enterprise team use synthetic data instead of real data — and at what privacy budget does the tradeoff stop being worth it?
 
-> See [RESEARCH_STATUS.md](RESEARCH_STATUS.md) for a full breakdown of which results are directly measured on real data vs. produced by calibrated simulation models.
+**EnterpriseSynth** is a research benchmark for evaluating the privacy-utility-fidelity tradeoff of differentially private synthetic data generation across regulated enterprise domains: HR records, healthcare EHR, financial transactions, IoT sensor logs, and e-commerce relational data. The repository supports both in-repo benchmarking (deterministic scripts producing JSON results) and paper-oriented workflows (draft and appendix tables that cite the same result files).
 
-**EnterpriseSynth** is a benchmark for differentially private synthetic tabular data generation in regulated enterprise domains. It measures the Privacy × Utility × Fidelity tradeoff across six DP budgets (ε ∈ {0.1, 0.5, 1, 2, 5, 10}, δ=1e-5) and six regulated data domains (HR, Healthcare EHR, Financial, IoT, E-commerce, Legal/DevOps).
+---
 
-**Key findings:**
+## What This Repository Contributes
 
-- At ε=2, δ=1e-5, DP synthetic data retains 79–81% of real-data oracle F1 across tabular enterprise domains
-- Financial time-series degrades fastest under DP (needs ε=5 to match HR utility at ε=2)
-- Model collapse drops tail-record diversity 51% by generation 5 without mitigation; diversity-rewarded sampling keeps it within 10% of generation-0
+EnterpriseSynth focuses on four research questions:
 
-**Note on scope:** The `src/enterprisesynth/` module includes an OpenAPI/SFT trace generation prototype from an earlier phase of the project. The primary research contribution — the DP benchmark — lives in `src/privacy_benchmark/`, `src/consistency/`, and `src/tstr_eval/`. See [DESIGN_DOC.md](DESIGN_DOC.md) and [paper/draft.md](paper/draft.md) for the full research framing.
+**DP budget selection:** How much utility (TSTR F1) do you sacrifice at each privacy level (ε ∈ {0.1, 0.5, 1, 2, 5, 10}, δ=1e-5) — and which ε maps to GDPR, HIPAA, and SOX compliance requirements?
 
-## Research Significance
+**Domain sensitivity:** Does the same DP budget cost more utility in financial time-series data than in tabular HR records? Which synthesizer (CTGAN / TVAE / GaussianCopula) performs best per domain?
 
-EnterpriseSynth is the first benchmark to simultaneously measure Privacy × Utility × Fidelity for differentially private synthetic data across six regulated enterprise domains. Prior work (SDGym, CTAB-GAN+) evaluates on generic tabular datasets without enterprise constraint verification; EnterpriseSynth adds constraint violation rate, domain-specific sensitivity multipliers, and a multi-generation model collapse study.
+**Fidelity-utility correlation:** Which fidelity metric (Wasserstein distance, constraint violation rate, BERTScore) best predicts downstream model utility across enterprise data types?
 
-The framework is especially relevant for:
+**Iterative retraining safety:** What happens to rare records (fraud, security incidents, edge medical cases) when you retrain on synthetic outputs across multiple generations — and which mitigation strategies contain the collapse?
 
-- Enterprise data teams evaluating DP synthesizers for GDPR/HIPAA/SOX compliance
-- ML researchers studying the privacy-utility tradeoff in structured tabular data
-- Compliance engineers mapping ε budgets to regulatory tiers
-- Practitioners building synthetic data pipelines that require iterative retraining safety
+The current repository includes:
+
+- A three-dimensional evaluation framework: Privacy (MIA AUC) × Utility (TSTR F1) × Fidelity (Wasserstein + constraint violation rate)
+- Real measured baselines: CTGAN, TVAE, and GaussianCopula trained on Adult Income, Credit-G, and Diabetes PIMA (UCI) with measured wall-clock times
+- Domain-specific sensitivity multipliers (tabular_hr=1.0 → ecommerce_relational=1.70) that produce distinct Pareto curves per domain
+- A multi-generation model collapse study with tail-coverage entropy metrics and two validated mitigations
+- Bootstrap confidence intervals and Wilcoxon signed-rank tests with Bonferroni correction throughout
+- `scripts/run_opacus_dp_sweep.py` — end-to-end real DP-SGD sweep via Opacus (runs when `pip install opacus torch` is available)
+
+---
+
+## Current Status
+
+| Experiment | Current status | Best entrypoint |
+| --- | --- | --- |
+| Real baseline (no-DP) | Measured and reproducible in-repo | `python scripts/run_baseline_sdg.py` |
+| ε sweep — Pareto curves | Calibrated simulation; domain-varying curves | `python scripts/run_epsilon_sweep.py` |
+| DP real integration | Oracle + no-DP TSTR measured; DP F1 estimated | `python scripts/run_dp_real_integration.py` |
+| Downstream task diversity | Classification F1 measured; regression/anomaly estimated | `python scripts/run_downstream_tasks.py` |
+| Model collapse study | Measured in controlled simulation pipeline | `python scripts/run_collapse_study.py` |
+| DP mechanism comparison | Gaussian / Laplace / Discrete run directly | `python scripts/run_dp_mechanism_comparison.py` |
+| Real DP-SGD sweep | Pending — requires `pip install opacus torch` | `python scripts/run_opacus_dp_sweep.py` |
+
+Useful repository documents:
+
+- [DESIGN_DOC.md](DESIGN_DOC.md)
+- [RESEARCH_STATUS.md](RESEARCH_STATUS.md) — full real vs. simulated provenance for every result file
+- [paper/draft.md](paper/draft.md) — full paper draft (Abstract through Appendices)
+
+---
+
+## Current In-Repo Findings
+
+These are the current repo-verified findings, not a claim that every paper-ready external measurement has been finalized:
+
+**Real baseline (measured):** TVAE retains 94.3% of oracle F1 on HR data; CTGAN retains 98.3% on financial data; GaussianCopula retains 91.4% on healthcare EHR. These establish the utility ceiling before DP is applied.
+
+**ε sweep (calibrated simulation, domain-varying):** At ε=2 (HIPAA-compatible tier, δ=1e-5), estimated DP utility retention is 79–81% across tabular enterprise domains. Utility cliff (below 90% baseline) persists for all domains at ε ≤ 5. Financial transactions degrade fastest — need ε=5 to match HR utility at ε=2.
+
+**Model collapse (measured in controlled pipeline):** Tail-record entropy drops to warning threshold by generation 2–3 and critical threshold by generation 5 at a 30% collapse rate. Fraud and security-class records fall below 0.5% representation by generation 7 without mitigation. Real-data anchoring and diversity-rewarded sampling both keep tail diversity within 10% of generation-0 baseline.
+
+**Fidelity-utility correlation (simulated pipeline):** Constraint violation rate is the dominant fidelity predictor for tabular assets (|ρ|=1.0); BERTScore is dominant for document assets (|ρ|=1.0). Multiple fidelity metrics are required — no single metric is sufficient for both asset types.
+
+---
+
+## Result Provenance Matters
+
+This repository intentionally tracks more than one kind of result:
+
+| Result type | Meaning |
+| --- | --- |
+| **Measured** | Real SDV training runs on UCI public datasets with wall-clock times and actual F1 scores |
+| **Estimated** | Calibrated retention curves applied to real measured baselines (e.g. DP F1 = oracle × retention(ε)) |
+| **Simulated** | DomainSpec logistic model outputs — no real DP-SGD training; domain-ordered and monotone by design |
+
+For the ε sweep and Table 2 DP columns, the default scripts produce **calibrated simulation results**. These are directionally sound, domain-varying, and reproducible, but they should not be cited as measured DP-SGD training numbers until `scripts/run_opacus_dp_sweep.py` has been run and `results/real_dp_sweep.json` committed. See [RESEARCH_STATUS.md](RESEARCH_STATUS.md) for the full accounting.
+
+---
 
 ## Benchmark Pipeline
 
@@ -63,6 +115,8 @@ Real Enterprise Dataset (HR / EHR / Financial / IoT / E-commerce)
   (privacy × utility × fidelity per ε, per domain)
 ```
 
+---
+
 ## Quick Start
 
 ```bash
@@ -71,11 +125,12 @@ pip install -e ".[dev]"
 # Run the full ε sweep across all three domains
 python scripts/run_epsilon_sweep.py
 
-# Downstream task diversity (classification / regression / anomaly detection)
-python scripts/run_downstream_tasks.py
+# Real-data baselines (Adult Income, Credit-G, Diabetes PIMA) — takes ~20 min
+python scripts/run_baseline_sdg.py
 
-# Real-data baselines on public datasets (Adult Income, Credit-G, Diabetes PIMA)
-python scripts/run_dp_real_integration.py
+# Real DP-SGD sweep via Opacus — requires pip install opacus torch
+python scripts/run_opacus_dp_sweep.py --dry-run   # check deps
+python scripts/run_opacus_dp_sweep.py             # full run (~2h)
 ```
 
 ```python
@@ -84,24 +139,35 @@ from privacy_benchmark.domains import get_domain
 
 domain = get_domain("financial_transactions")
 
-# Evaluate one DP configuration (ε=2, δ=1e-5)
 result = evaluate_with_ci(
     epsilon=2.0,
-    auc=0.58,           # MIA AUC from shadow-model attack
-    tstr_scores=[0.61, 0.63, 0.60, 0.62, 0.64],  # per-seed TSTR F1
+    auc=0.58,
+    tstr_scores=[0.61, 0.63, 0.60, 0.62, 0.64],
     fidelity=0.81,
 )
 print(result)
 # {
 #   "epsilon": 2.0,
-#   "privacy_score": 0.42,   # 1 − AUC_MIA
-#   "utility_score": 0.62,   # mean TSTR F1
-#   "fidelity_score": 0.81,
+#   "privacy_score": 0.42,
+#   "utility_score": 0.62,
 #   "tstr_ci_lower": 0.595,
 #   "tstr_ci_upper": 0.645,
-#   ...
+#   "compliance_tier": "balanced",
+#   "below_utility_cliff": false
 # }
 ```
+
+---
+
+## Reproduce All Results
+
+```bash
+bash run_all.sh          # full reproduction (~25 min, CPU only)
+bash run_all.sh --quick  # smoke test (~3 min)
+python -m pytest tests/ -v  # 296 tests
+```
+
+---
 
 ## Output Format
 
@@ -121,22 +187,20 @@ Each row in `results/epsilon_sweep.json` contains:
 | `below_utility_cliff` | `bool` | True if utility < 90% of no-DP baseline |
 | `domain_sensitivity_multiplier` | `float` | Per-domain DP sensitivity (1.0–1.70) |
 
-## Logical Consistency Benchmarking
+---
 
-The `src/consistency/` module evaluates inter-column logical consistency in synthetic enterprise tabular data. Constraint violation rate is one of the three primary fidelity metrics.
+## Note on Scope
 
-Example constraints checked:
+The `src/enterprisesynth/` module contains an OpenAPI/SFT trace generation prototype from an earlier phase of this project. The primary research contribution — the DP benchmark — lives in `src/privacy_benchmark/`, `src/consistency/`, and `src/tstr_eval/`. Both threads are described in [DESIGN_DOC.md](DESIGN_DOC.md).
 
-- `hire_date <= termination_date`
-- `salary >= 0`
-- `age` consistent with `birth_year`
-
-Violations spike below ε=3 in relational schemas (FK constraint breaks from DP noise) — see `results/product_audit.json`.
+---
 
 ## Target Venues
 
-- MLinPL 2026 (Machine Learning in Poland Conference) — deadline Aug 1, 2026
+- MLinPL 2026 — deadline Aug 1, 2026
 - AAAI 2027 Workshop on Enterprise AI Evaluation — deadline Jul 28, 2026
+
+---
 
 ## Citation
 
@@ -144,7 +208,7 @@ Violations spike below ε=3 in relational schemas (FK constraint breaks from DP 
 @misc{enterprisesynth2026,
   title        = {EnterpriseSynth: A Benchmark for Differentially Private Synthetic Data
                   in Regulated Enterprise Domains},
-  author       = {Anote AI Research},
+  author       = {Thimmaraju, Rashmi},
   year         = {2026},
   howpublished = {\url{https://github.com/anote-ai/Research-EnterpriseSynth}},
   note         = {Preprint}
