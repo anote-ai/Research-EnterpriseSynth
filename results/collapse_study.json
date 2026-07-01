@@ -1,7 +1,7 @@
 {
   "0.1": {
     "collapse_rate": 0.1,
-    "n_generations": 5,
+    "n_generations": 10,
     "n_records": 500,
     "baseline_tail_entropy": 0.854,
     "baseline_minority_representation": 0.046,
@@ -65,18 +65,68 @@
         "coverage_pct_of_baseline": 0.9282,
         "minority_representation": 0.03037,
         "tail_divergence": 0.0069
+      },
+      {
+        "generation": 6,
+        "n_records": 449,
+        "tail_entropy": 0.7266,
+        "tail_pct_of_baseline": 0.8509,
+        "coverage_entropy": 0.6065,
+        "coverage_pct_of_baseline": 0.9047,
+        "minority_representation": 0.02673,
+        "tail_divergence": 0.0132
+      },
+      {
+        "generation": 7,
+        "n_records": 441,
+        "tail_entropy": 0.6834,
+        "tail_pct_of_baseline": 0.8003,
+        "coverage_entropy": 0.5955,
+        "coverage_pct_of_baseline": 0.8882,
+        "minority_representation": 0.02041,
+        "tail_divergence": 0.0202
+      },
+      {
+        "generation": 8,
+        "n_records": 436,
+        "tail_entropy": 0.6616,
+        "tail_pct_of_baseline": 0.7747,
+        "coverage_entropy": 0.5924,
+        "coverage_pct_of_baseline": 0.8836,
+        "minority_representation": 0.01835,
+        "tail_divergence": 0.0237
+      },
+      {
+        "generation": 9,
+        "n_records": 427,
+        "tail_entropy": 0.6284,
+        "tail_pct_of_baseline": 0.7359,
+        "coverage_entropy": 0.5802,
+        "coverage_pct_of_baseline": 0.8654,
+        "minority_representation": 0.01874,
+        "tail_divergence": 0.0328
+      },
+      {
+        "generation": 10,
+        "n_records": 421,
+        "tail_entropy": 0.6284,
+        "tail_pct_of_baseline": 0.7359,
+        "coverage_entropy": 0.5833,
+        "coverage_pct_of_baseline": 0.8701,
+        "minority_representation": 0.019,
+        "tail_divergence": 0.0328
       }
     ],
     "threshold_crossings": {
       "warning": 5,
-      "moderate": null,
+      "moderate": 9,
       "critical": null
     },
     "minority_depletion_generation": null
   },
   "0.2": {
     "collapse_rate": 0.2,
-    "n_generations": 5,
+    "n_generations": 10,
     "n_records": 500,
     "baseline_tail_entropy": 0.854,
     "baseline_minority_representation": 0.046,
@@ -140,18 +190,68 @@
         "coverage_pct_of_baseline": 0.8797,
         "minority_representation": 0.02294,
         "tail_divergence": 0.0304
+      },
+      {
+        "generation": 6,
+        "n_records": 420,
+        "tail_entropy": 0.5409,
+        "tail_pct_of_baseline": 0.6334,
+        "coverage_entropy": 0.5618,
+        "coverage_pct_of_baseline": 0.8379,
+        "minority_representation": 0.01429,
+        "tail_divergence": 0.0576
+      },
+      {
+        "generation": 7,
+        "n_records": 413,
+        "tail_entropy": 0.4848,
+        "tail_pct_of_baseline": 0.5677,
+        "coverage_entropy": 0.5475,
+        "coverage_pct_of_baseline": 0.8166,
+        "minority_representation": 0.01453,
+        "tail_divergence": 0.0807
+      },
+      {
+        "generation": 8,
+        "n_records": 406,
+        "tail_entropy": 0.4193,
+        "tail_pct_of_baseline": 0.491,
+        "coverage_entropy": 0.5384,
+        "coverage_pct_of_baseline": 0.8031,
+        "minority_representation": 0.00985,
+        "tail_divergence": 0.0974
+      },
+      {
+        "generation": 9,
+        "n_records": 394,
+        "tail_entropy": 0.3254,
+        "tail_pct_of_baseline": 0.3811,
+        "coverage_entropy": 0.5154,
+        "coverage_pct_of_baseline": 0.7687,
+        "minority_representation": 0.00761,
+        "tail_divergence": 0.1391
+      },
+      {
+        "generation": 10,
+        "n_records": 384,
+        "tail_entropy": 0.3362,
+        "tail_pct_of_baseline": 0.3937,
+        "coverage_entropy": 0.5158,
+        "coverage_pct_of_baseline": 0.7693,
+        "minority_representation": 0.00781,
+        "tail_divergence": 0.1352
       }
     ],
     "threshold_crossings": {
       "warning": 3,
-      "moderate": null,
-      "critical": null
+      "moderate": 6,
+      "critical": 8
     },
     "minority_depletion_generation": null
   },
   "0.3": {
     "collapse_rate": 0.3,
-    "n_generations": 5,
+    "n_generations": 10,
     "n_records": 500,
     "baseline_tail_entropy": 0.854,
     "baseline_minority_representation": 0.046,
@@ -215,6 +315,56 @@
         "coverage_pct_of_baseline": 0.8156,
         "minority_representation": 0.01746,
         "tail_divergence": 0.1343
+      },
+      {
+        "generation": 6,
+        "n_records": 390,
+        "tail_entropy": 0.3832,
+        "tail_pct_of_baseline": 0.4487,
+        "coverage_entropy": 0.5968,
+        "coverage_pct_of_baseline": 0.8902,
+        "minority_representation": 0.01538,
+        "tail_divergence": 0.1814
+      },
+      {
+        "generation": 7,
+        "n_records": 377,
+        "tail_entropy": 0.3516,
+        "tail_pct_of_baseline": 0.4117,
+        "coverage_entropy": 0.5963,
+        "coverage_pct_of_baseline": 0.8894,
+        "minority_representation": 0.01326,
+        "tail_divergence": 0.1863
+      },
+      {
+        "generation": 8,
+        "n_records": 365,
+        "tail_entropy": 0.2668,
+        "tail_pct_of_baseline": 0.3124,
+        "coverage_entropy": 0.6669,
+        "coverage_pct_of_baseline": 0.9947,
+        "minority_representation": 0.00548,
+        "tail_divergence": 0.2385
+      },
+      {
+        "generation": 9,
+        "n_records": 341,
+        "tail_entropy": 0.3712,
+        "tail_pct_of_baseline": 0.4347,
+        "coverage_entropy": 0.621,
+        "coverage_pct_of_baseline": 0.9263,
+        "minority_representation": 0.00587,
+        "tail_divergence": 0.2235
+      },
+      {
+        "generation": 10,
+        "n_records": 322,
+        "tail_entropy": 0.0,
+        "tail_pct_of_baseline": 0.0,
+        "coverage_entropy": 0.716,
+        "coverage_pct_of_baseline": 1.068,
+        "minority_representation": 0.0,
+        "tail_divergence": 0.2994
       }
     ],
     "threshold_crossings": {
@@ -222,11 +372,11 @@
       "moderate": 4,
       "critical": 5
     },
-    "minority_depletion_generation": null
+    "minority_depletion_generation": 10
   },
   "0.4": {
     "collapse_rate": 0.4,
-    "n_generations": 5,
+    "n_generations": 10,
     "n_records": 500,
     "baseline_tail_entropy": 0.854,
     "baseline_minority_representation": 0.046,
@@ -290,6 +440,56 @@
         "coverage_pct_of_baseline": 0.8177,
         "minority_representation": 0.00775,
         "tail_divergence": 0.0964
+      },
+      {
+        "generation": 6,
+        "n_records": 374,
+        "tail_entropy": 0.3124,
+        "tail_pct_of_baseline": 0.3659,
+        "coverage_entropy": 0.5358,
+        "coverage_pct_of_baseline": 0.7991,
+        "minority_representation": 0.00535,
+        "tail_divergence": 0.1352
+      },
+      {
+        "generation": 7,
+        "n_records": 356,
+        "tail_entropy": 0.2661,
+        "tail_pct_of_baseline": 0.3116,
+        "coverage_entropy": 0.5804,
+        "coverage_pct_of_baseline": 0.8657,
+        "minority_representation": 0.00281,
+        "tail_divergence": 0.1876
+      },
+      {
+        "generation": 8,
+        "n_records": 341,
+        "tail_entropy": 0.2714,
+        "tail_pct_of_baseline": 0.3178,
+        "coverage_entropy": 0.6673,
+        "coverage_pct_of_baseline": 0.9953,
+        "minority_representation": 0.0,
+        "tail_divergence": 0.2204
+      },
+      {
+        "generation": 9,
+        "n_records": 315,
+        "tail_entropy": 0.4022,
+        "tail_pct_of_baseline": 0.471,
+        "coverage_entropy": 0.6176,
+        "coverage_pct_of_baseline": 0.9213,
+        "minority_representation": 0.0,
+        "tail_divergence": 0.1918
+      },
+      {
+        "generation": 10,
+        "n_records": 296,
+        "tail_entropy": 0.0,
+        "tail_pct_of_baseline": 0.0,
+        "coverage_entropy": 0.7121,
+        "coverage_pct_of_baseline": 1.0621,
+        "minority_representation": 0.0,
+        "tail_divergence": 0.2994
       }
     ],
     "threshold_crossings": {
@@ -297,6 +497,6 @@
       "moderate": 3,
       "critical": 5
     },
-    "minority_depletion_generation": null
+    "minority_depletion_generation": 7
   }
 }

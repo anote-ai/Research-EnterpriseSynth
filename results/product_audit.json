@@ -34,8 +34,8 @@
   "investigation_2": {
     "healthcare_hipaa": {
       "epsilon": 1.5,
-      "mia_auc": 0.6553,
-      "privacy_score": 0.3447,
+      "mia_auc": 0.6672,
+      "privacy_score": 0.3328,
       "auc_threshold": 0.67,
       "tier": "balanced",
       "recommended_epsilon": 1,
@@ -43,8 +43,8 @@
     },
     "finance_sox": {
       "epsilon": 7.0,
-      "mia_auc": 0.7589,
-      "privacy_score": 0.2411,
+      "mia_auc": 0.7456,
+      "privacy_score": 0.2544,
       "auc_threshold": 0.82,
       "tier": "utility_focused",
       "recommended_epsilon": 5,
@@ -52,8 +52,8 @@
     },
     "gdpr_research": {
       "epsilon": 0.5,
-      "mia_auc": 0.5763,
-      "privacy_score": 0.4237,
+      "mia_auc": 0.5808,
+      "privacy_score": 0.4192,
       "auc_threshold": 0.55,
       "tier": "strict",
       "recommended_epsilon": 0.1,
@@ -61,8 +61,8 @@
     },
     "internal_analytics": {
       "epsilon": 10.0,
-      "mia_auc": 0.7708,
-      "privacy_score": 0.2292,
+      "mia_auc": 0.7678,
+      "privacy_score": 0.2322,
       "auc_threshold": 0.9,
       "tier": "utility_focused",
       "recommended_epsilon": 5,
