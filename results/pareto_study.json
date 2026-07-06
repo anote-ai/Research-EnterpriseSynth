@@ -1,0 +1,381 @@
+{
+  "baselines": {
+    "tabular_hr": 0.98,
+    "healthcare_ehr": 0.97,
+    "financial_transactions": 0.96,
+    "iot_sensor": 0.94,
+    "ecommerce_relational": 0.95
+  },
+  "pareto": {
+    "tabular_hr": [
+      {
+        "epsilon": 0.1,
+        "auc": 0.5353366252909302,
+        "privacy_score": 0.4646633747090698,
+        "utility_score": 0.5757216728406698,
+        "fidelity_score": 0.594800333439214,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.5655079934527741,
+        "utility_retention": 0.5874710947353773,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 0.5,
+        "auc": 0.5810509110052158,
+        "privacy_score": 0.4189490889947842,
+        "utility_score": 0.6563466728406697,
+        "fidelity_score": 0.6557527143915949,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.6445204934527742,
+        "utility_retention": 0.6697415028986425,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 1,
+        "auc": 0.6210509110052158,
+        "privacy_score": 0.3789490889947842,
+        "utility_score": 0.7208466728406696,
+        "fidelity_score": 0.7090860477249283,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.7077304934527741,
+        "utility_retention": 0.7355578294292547,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 2,
+        "auc": 0.6710509110052159,
+        "privacy_score": 0.32894908899478414,
+        "utility_score": 0.7945609585549553,
+        "fidelity_score": 0.775752714391595,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.779970493452774,
+        "utility_retention": 0.810776488321383,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 5,
+        "auc": 0.7353366252909301,
+        "privacy_score": 0.26466337470906987,
+        "utility_score": 0.8796159036099004,
+        "fidelity_score": 0.8614670001058806,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.8633243396066203,
+        "utility_retention": 0.897567248581531,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 10,
+        "auc": 0.7710509110052158,
+        "privacy_score": 0.22894908899478417,
+        "utility_score": 0.9227597163189307,
+        "fidelity_score": 0.9090860477249283,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.9056052760614698,
+        "utility_retention": 0.941591547264215,
+        "is_pareto_efficient": true
+      }
+    ],
+    "healthcare_ehr": [
+      {
+        "epsilon": 0.1,
+        "auc": 0.5353366252909302,
+        "privacy_score": 0.4646633747090698,
+        "utility_score": 0.5724083166762861,
+        "fidelity_score": 0.5924193810582615,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.5605402194801714,
+        "utility_retention": 0.5901116666765837,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 0.5,
+        "auc": 0.5810509110052158,
+        "privacy_score": 0.4189490889947842,
+        "utility_score": 0.6454758863238157,
+        "fidelity_score": 0.6471812858201663,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.6319272350258078,
+        "utility_retention": 0.6654390580657894,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 1,
+        "auc": 0.6210509110052158,
+        "privacy_score": 0.3789490889947842,
+        "utility_score": 0.7066448379782843,
+        "fidelity_score": 0.6969648356037161,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.6916893007922236,
+        "utility_retention": 0.7284998329673034,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 2,
+        "auc": 0.6710509110052159,
+        "privacy_score": 0.32894908899478414,
+        "utility_score": 0.7797191560621461,
+        "fidelity_score": 0.7617992260195019,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.7630829095601567,
+        "utility_retention": 0.8038341815073672,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 5,
+        "auc": 0.7353366252909301,
+        "privacy_score": 0.26466337470906987,
+        "utility_score": 0.8685492750711529,
+        "fidelity_score": 0.8497253171313212,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.8498699358319562,
+        "utility_retention": 0.8954116237846937,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 10,
+        "auc": 0.7710509110052158,
+        "privacy_score": 0.22894908899478417,
+        "utility_score": 0.9155844127127379,
+        "fidelity_score": 0.9009559664241152,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.0,
+        "downstream_accuracy": 0.8958232653077847,
+        "utility_retention": 0.9439014564048845,
+        "is_pareto_efficient": true
+      }
+    ],
+    "financial_transactions": [
+      {
+        "epsilon": 0.1,
+        "auc": 0.5353366252909302,
+        "privacy_score": 0.4646633747090698,
+        "utility_score": 0.5690819669583168,
+        "fidelity_score": 0.5900384286773092,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 1.0,
+        "downstream_accuracy": 0.5550094346292447,
+        "utility_retention": 0.59279371558158,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 0.5,
+        "auc": 0.5810509110052158,
+        "privacy_score": 0.4189490889947842,
+        "utility_score": 0.6339951876921549,
+        "fidelity_score": 0.6382527143915949,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.5868235817446125,
+        "downstream_accuracy": 0.6181699984032691,
+        "utility_retention": 0.6604116538459948,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 1,
+        "auc": 0.6210509110052158,
+        "privacy_score": 0.3789490889947842,
+        "utility_score": 0.6909954331712483,
+        "fidelity_score": 0.683860822499703,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.3596601202061509,
+        "downstream_accuracy": 0.6736312372544271,
+        "utility_retention": 0.7197869095533838,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 2,
+        "auc": 0.6710509110052159,
+        "privacy_score": 0.32894908899478414,
+        "utility_score": 0.7625112691139616,
+        "fidelity_score": 0.7459654803490418,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.20163336435330814,
+        "downstream_accuracy": 0.7432161456266871,
+        "utility_retention": 0.79428257199371,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 5,
+        "auc": 0.7353366252909301,
+        "privacy_score": 0.26466337470906987,
+        "utility_score": 0.8548964949047265,
+        "fidelity_score": 0.8354929741318546,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.08534952514083889,
+        "downstream_accuracy": 0.8331069703211014,
+        "utility_retention": 0.8905171821924235,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 10,
+        "auc": 0.7710509110052158,
+        "privacy_score": 0.22894908899478417,
+        "utility_score": 0.9064350304290274,
+        "fidelity_score": 0.8907133443128548,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.042072368152379455,
+        "downstream_accuracy": 0.883253965386246,
+        "utility_retention": 0.9442031566969036,
+        "is_pareto_efficient": true
+      }
+    ],
+    "iot_sensor": [
+      {
+        "epsilon": 0.1,
+        "auc": 0.5353366252909302,
+        "privacy_score": 0.4646633747090698,
+        "utility_score": 0.5665786316035563,
+        "fidelity_score": 0.5882527143915949,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 1.0,
+        "downstream_accuracy": 0.5503027614940112,
+        "utility_retention": 0.6027432251101663,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 0.5,
+        "auc": 0.5810509110052158,
+        "privacy_score": 0.4189490889947842,
+        "utility_score": 0.6249528675309353,
+        "fidelity_score": 0.6313082699471505,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.6743235817446125,
+        "downstream_accuracy": 0.6068673961076414,
+        "utility_retention": 0.6648434760967397,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 1,
+        "auc": 0.6210509110052158,
+        "privacy_score": 0.3789490889947842,
+        "utility_score": 0.6781699811113464,
+        "fidelity_score": 0.673313690001351,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.4135062740523048,
+        "downstream_accuracy": 0.6584347791670597,
+        "utility_retention": 0.7214574267141983,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 2,
+        "auc": 0.6710509110052159,
+        "privacy_score": 0.32894908899478414,
+        "utility_score": 0.747690603476508,
+        "fidelity_score": 0.7326154594896341,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.23206814696200379,
+        "downstream_accuracy": 0.7258002622389013,
+        "utility_retention": 0.7954155356133064,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 5,
+        "auc": 0.7353366252909301,
+        "privacy_score": 0.26466337470906987,
+        "utility_score": 0.8423620312024444,
+        "fidelity_score": 0.8226662946385085,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.09855707231065021,
+        "downstream_accuracy": 0.8175368757053338,
+        "utility_retention": 0.8961298204281324,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 10,
+        "auc": 0.7710509110052158,
+        "privacy_score": 0.22894908899478417,
+        "utility_score": 0.8977310541794121,
+        "fidelity_score": 0.8810962258419766,
+        "fk_violation_rate": 0.0,
+        "temporal_autocorr_loss": 0.04886848465723383,
+        "downstream_accuracy": 0.8711894589700154,
+        "utility_retention": 0.9550330363610768,
+        "is_pareto_efficient": true
+      }
+    ],
+    "ecommerce_relational": [
+      {
+        "epsilon": 0.1,
+        "auc": 0.5353366252909302,
+        "privacy_score": 0.4646633747090698,
+        "utility_score": 0.5650730879350094,
+        "fidelity_score": 0.5871812858201663,
+        "fk_violation_rate": 0.488101904839991,
+        "temporal_autocorr_loss": 0.6241145626767344,
+        "downstream_accuracy": 0.5471452104339062,
+        "utility_retention": 0.5948137767736942,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 0.5,
+        "auc": 0.5810509110052158,
+        "privacy_score": 0.4189490889947842,
+        "utility_score": 0.6193384761193583,
+        "fidelity_score": 0.6270347656736462,
+        "fk_violation_rate": 0.41565197494207695,
+        "temporal_autocorr_loss": 0.31161456267673443,
+        "downstream_accuracy": 0.5995655754199872,
+        "utility_retention": 0.6519352380203772,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 1,
+        "auc": 0.6210509110052158,
+        "privacy_score": 0.3789490889947842,
+        "utility_score": 0.6699734334040499,
+        "fidelity_score": 0.6666618053006859,
+        "fk_violation_rate": 0.3399625143504822,
+        "temporal_autocorr_loss": 0.1914222549844267,
+        "downstream_accuracy": 0.6484789441569995,
+        "utility_retention": 0.7052351930568946,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 2,
+        "auc": 0.6710509110052159,
+        "privacy_score": 0.32894908899478414,
+        "utility_score": 0.7378576618516588,
+        "fidelity_score": 0.7239008625397432,
+        "fk_violation_rate": 0.2272570625720892,
+        "temporal_autocorr_loss": 0.10781021485064746,
+        "downstream_accuracy": 0.7140551088373895,
+        "utility_retention": 0.7766922756333251,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 5,
+        "auc": 0.7353366252909301,
+        "privacy_score": 0.26466337470906987,
+        "utility_score": 0.8336148847611996,
+        "fidelity_score": 0.8138479524868331,
+        "fk_violation_rate": 0.0671202853229787,
+        "temporal_autocorr_loss": 0.04628437399748912,
+        "downstream_accuracy": 0.8065565861680059,
+        "utility_retention": 0.8774893523802102,
+        "is_pareto_efficient": true
+      },
+      {
+        "epsilon": 10,
+        "auc": 0.7710509110052158,
+        "privacy_score": 0.22894908899478417,
+        "utility_score": 0.8914761549123827,
+        "fidelity_score": 0.8742601770781621,
+        "fk_violation_rate": 0.007440266705560662,
+        "temporal_autocorr_loss": 0.023386407336928577,
+        "downstream_accuracy": 0.8624505731340489,
+        "utility_retention": 0.9383959525393503,
+        "is_pareto_efficient": true
+      }
+    ]
+  }
+}
