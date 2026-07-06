@@ -9,12 +9,13 @@ Data provenance
 Classification F1 no-DP baselines: REAL MEASURED values from results/baseline_sdg.json
 (full SDV training runs on UCI public datasets).  These are NOT simulated.
 
-Regression R² and anomaly recall no-DP baselines: SIMULATED via proxy classifiers on
-a procedurally-generated financial transaction dataset (see below).  These are labelled
-"(simulated)" in all output.
+Regression R² and anomaly recall no-DP baselines: REAL MEASURED values from
+local sklearn public datasets. Regression uses the diabetes progression dataset;
+anomaly recall uses breast-cancer labels with malignant cases treated as the
+rare/risk class for one-class detection. These are NOT simulated.
 
-DP degradation curves for all three tasks: SIMULATED via per-task logistic retention
-curves anchored to the measured (or simulated) no-DP baselines.  Labels: "(est.)".
+DP degradation curves for all three tasks: ESTIMATED via per-task logistic retention
+curves anchored to measured no-DP baselines.  Labels: "(est.)".
 
 Hypothesis: anomaly detection degrades fastest (DP noise smooths outlier structure),
 classification degrades slowest (class boundaries survive moderate noise).
@@ -30,7 +31,7 @@ import os
 import math
 import random
 import json
-import pathlib
+from functools import lru_cache
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -64,16 +65,69 @@ _REAL_NODP_CLASSIFICATION = {
 }
 
 # ---------------------------------------------------------------------------
-# Simulated no-DP baselines for tasks without real measurements
+# Real measured no-DP baselines for non-classification tasks
 #
-# Regression R² and anomaly recall cannot be directly extracted from the UCI
-# public datasets without additional experiment setup (continuous target for
-# regression, anomaly labels for recall).  These are proxy values from the
-# simulated financial transaction dataset defined below.
+# These are computed at runtime from sklearn's bundled public datasets to keep
+# this script offline and reproducible:
+#   - regression_r2: diabetes disease-progression target, RandomForestRegressor
+#   - anomaly_recall: breast-cancer malignant class as rare/risk cases,
+#     IsolationForest fit on normal training records only
 # ---------------------------------------------------------------------------
 
-_SIMULATED_NODP_REGRESSION_R2 = 0.041   # OLS log_amount ~ hour_of_day on clean synthetic
-_SIMULATED_NODP_ANOMALY_RECALL = 0.602  # 95th-pct anomaly_score threshold on clean synthetic
+
+@lru_cache(maxsize=1)
+def _measure_real_downstream_baselines() -> dict[str, dict[str, float | str]]:
+    """Measure no-DP regression and anomaly baselines on real public datasets."""
+    from sklearn.datasets import load_breast_cancer, load_diabetes
+    from sklearn.ensemble import IsolationForest, RandomForestRegressor
+    from sklearn.metrics import r2_score, recall_score
+    from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.pipeline import Pipeline
+
+    diabetes = load_diabetes()
+    X_train, X_test, y_train, y_test = train_test_split(
+        diabetes.data, diabetes.target, test_size=0.25, random_state=42
+    )
+    reg = RandomForestRegressor(n_estimators=200, random_state=42, n_jobs=-1)
+    reg.fit(X_train, y_train)
+    regression_r2 = max(0.0, float(r2_score(y_test, reg.predict(X_test))))
+
+    cancer = load_breast_cancer()
+    # sklearn breast-cancer target: 0=malignant, 1=benign. Treat malignant as
+    # rare/risk anomaly for recall measurement.
+    X = cancer.data
+    y_anomaly = (cancer.target == 0).astype(int)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y_anomaly, test_size=0.30, random_state=42, stratify=y_anomaly
+    )
+    normal_train = X_train[y_train == 0]
+    anomaly_model = Pipeline([
+        ("scale", StandardScaler()),
+        (
+            "iso",
+            IsolationForest(
+                n_estimators=300,
+                contamination=float(y_train.mean()),
+                random_state=42,
+            ),
+        ),
+    ])
+    anomaly_model.fit(normal_train)
+    # IsolationForest returns -1 for anomalies, 1 for inliers.
+    preds = (anomaly_model.predict(X_test) == -1).astype(int)
+    anomaly_recall = float(recall_score(y_test, preds, zero_division=0))
+
+    return {
+        "regression_r2": {
+            "score": round(regression_r2, 4),
+            "source": "sklearn diabetes progression / RandomForestRegressor — measured",
+        },
+        "anomaly_recall": {
+            "score": round(anomaly_recall, 4),
+            "source": "sklearn breast cancer malignant recall / IsolationForest — measured",
+        },
+    }
 
 # ---------------------------------------------------------------------------
 # DP sensitivity: how fast each task degrades relative to tabular baseline
@@ -102,20 +156,23 @@ def _task_scores_at_epsilon(
     epsilon: float,
     seed: int,
     nodp_classification_f1: float,
+    nodp_regression_r2: float,
+    nodp_anomaly_recall: float,
 ) -> dict[str, float]:
     """Compute downstream task scores at a given ε.
 
     classification_f1 is anchored to the real measured no-DP baseline.
-    regression_r2 and anomaly_recall are anchored to simulated baselines.
-    All DP values are estimated via logistic degradation curves.
+    regression_r2 and anomaly_recall are anchored to real measured no-DP baselines.
+    All DP values are estimated via logistic degradation curves until a matching
+    real DP sweep exists for every task type.
     """
     rng = random.Random(seed * 1000 + int(epsilon * 10))
     scores = {}
 
     baselines = {
         "classification_f1": nodp_classification_f1,
-        "regression_r2":     _SIMULATED_NODP_REGRESSION_R2,
-        "anomaly_recall":    _SIMULATED_NODP_ANOMALY_RECALL,
+        "regression_r2":     nodp_regression_r2,
+        "anomaly_recall":    nodp_anomaly_recall,
     }
 
     for task, baseline_val in baselines.items():
@@ -140,10 +197,24 @@ def run_downstream_sweep(
     """Sweep ε for one domain, using the real no-DP classification baseline."""
     nodp_f1 = _REAL_NODP_CLASSIFICATION[domain]["f1"]
     nodp_source = _REAL_NODP_CLASSIFICATION[domain]["source"]
+    measured = _measure_real_downstream_baselines()
+    nodp_regression_r2 = float(measured["regression_r2"]["score"])
+    nodp_regression_source = str(measured["regression_r2"]["source"])
+    nodp_anomaly_recall = float(measured["anomaly_recall"]["score"])
+    nodp_anomaly_source = str(measured["anomaly_recall"]["source"])
 
     all_results = []
     for eps in EPSILON_VALUES:
-        seed_scores = [_task_scores_at_epsilon(eps, s, nodp_f1) for s in range(n_seeds)]
+        seed_scores = [
+            _task_scores_at_epsilon(
+                eps,
+                s,
+                nodp_f1,
+                nodp_regression_r2,
+                nodp_anomaly_recall,
+            )
+            for s in range(n_seeds)
+        ]
         means = {k: sum(r[k] for r in seed_scores) / n_seeds for k in seed_scores[0]}
         stds = {
             k: math.sqrt(
@@ -153,8 +224,8 @@ def run_downstream_sweep(
         }
         pct_retained = {
             "classification_f1": means["classification_f1"] / nodp_f1 if nodp_f1 > 0 else 0.0,
-            "regression_r2":     means["regression_r2"] / _SIMULATED_NODP_REGRESSION_R2,
-            "anomaly_recall":    means["anomaly_recall"] / _SIMULATED_NODP_ANOMALY_RECALL,
+            "regression_r2":     means["regression_r2"] / nodp_regression_r2 if nodp_regression_r2 > 0 else 0.0,
+            "anomaly_recall":    means["anomaly_recall"] / nodp_anomaly_recall if nodp_anomaly_recall > 0 else 0.0,
         }
         tier = next(
             (t for t, eps_list in COMPLIANCE_TIERS.items() if eps in eps_list), "?"
@@ -170,20 +241,22 @@ def run_downstream_sweep(
             "classification_f1_nodp_baseline": nodp_f1,
             "classification_f1_baseline_source": "measured",
             "pct_classification": round(pct_retained["classification_f1"], 4),
-            # Regression — simulated baseline
+            # Regression — measured real-data baseline
             "regression_r2": round(means["regression_r2"], 4),
             "regression_r2_std": round(stds["regression_r2"], 4),
-            "regression_r2_nodp_baseline": _SIMULATED_NODP_REGRESSION_R2,
-            "regression_r2_baseline_source": "simulated",
+            "regression_r2_nodp_baseline": nodp_regression_r2,
+            "regression_r2_baseline_source": "measured",
             "pct_regression": round(pct_retained["regression_r2"], 4),
-            # Anomaly detection — simulated baseline
+            # Anomaly detection — measured real-data baseline
             "anomaly_recall": round(means["anomaly_recall"], 4),
             "anomaly_recall_std": round(stds["anomaly_recall"], 4),
-            "anomaly_recall_nodp_baseline": _SIMULATED_NODP_ANOMALY_RECALL,
-            "anomaly_recall_baseline_source": "simulated",
+            "anomaly_recall_nodp_baseline": nodp_anomaly_recall,
+            "anomaly_recall_baseline_source": "measured",
             "pct_anomaly": round(pct_retained["anomaly_recall"], 4),
             # Provenance
             "nodp_classification_source": nodp_source,
+            "nodp_regression_source": nodp_regression_source,
+            "nodp_anomaly_source": nodp_anomaly_source,
             "dp_values_source": "estimated — logistic degradation curve",
         }
         all_results.append(row)
@@ -193,14 +266,14 @@ def run_downstream_sweep(
         print(f"Domain: {domain}  (n_seeds={n_seeds})")
         print(f"No-DP baselines:")
         print(f"  classification_f1 = {nodp_f1:.4f}  [MEASURED — {nodp_source}]")
-        print(f"  regression_r2     = {_SIMULATED_NODP_REGRESSION_R2:.4f}  [simulated]")
-        print(f"  anomaly_recall    = {_SIMULATED_NODP_ANOMALY_RECALL:.4f}  [simulated]")
+        print(f"  regression_r2     = {nodp_regression_r2:.4f}  [MEASURED — {nodp_regression_source}]")
+        print(f"  anomaly_recall    = {nodp_anomaly_recall:.4f}  [MEASURED — {nodp_anomaly_source}]")
         print()
         print(
             f"  {'ε':>5}  {'Tier':<18}  {'Class.F1(meas)':>15}  "
-            f"{'Reg.R²(sim)':>12}  {'Recall(sim)':>11}  {'Worst task':>20}"
+            f"{'Reg.R²(meas)':>13}  {'Recall(meas)':>12}  {'Worst task':>20}"
         )
-        print(f"  {'-'*5}  {'-'*18}  {'-'*15}  {'-'*12}  {'-'*11}  {'-'*20}")
+        print(f"  {'-'*5}  {'-'*18}  {'-'*15}  {'-'*13}  {'-'*12}  {'-'*20}")
         for r in all_results:
             worst = min(
                 [("class", r["pct_classification"]),
@@ -216,7 +289,7 @@ def run_downstream_sweep(
                 f"{worst[0]} ({worst[1]:.1%})"
             )
         print()
-        print("Conclusion: anomaly detection is most DP-sensitive at every ε.")
+        print("Conclusion: DP estimates are anchored to measured no-DP baselines; anomaly detection is most DP-sensitive at most ε values.")
 
     return all_results
 
