@@ -17,6 +17,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import sys
 import os
 
@@ -200,15 +201,29 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="5-Domain DP Pareto Study (issue #35)")
     parser.add_argument("--seeds", type=int, default=5)
     parser.add_argument("--rows", type=int, default=10_000)
+    parser.add_argument("--json", action="store_true", help="Output results as JSON")
     args = parser.parse_args()
 
-    print("\nEnterpriseSynth — Utility-Privacy Pareto Study")
-    print(f"5 domains × {len(EPSILON_VALUES)} ε values × {args.seeds} seeds")
+    if not args.json:
+        print("\nEnterpriseSynth — Utility-Privacy Pareto Study")
+        print(f"5 domains × {len(EPSILON_VALUES)} ε values × {args.seeds} seeds")
 
-    baselines = experiment_1(args.seeds, args.rows)
-    pareto_results = experiment_2(baselines, args.seeds, args.rows)
-    experiment_3(pareto_results)
-    print_epsilon_guide()
+    # experiment_1/experiment_2 print human-readable tables unconditionally;
+    # redirect those to stderr when --json so stdout is valid JSON only.
+    run_context = contextlib.redirect_stdout(sys.stderr) if args.json else contextlib.nullcontext()
+    with run_context:
+        baselines = experiment_1(args.seeds, args.rows)
+        pareto_results = experiment_2(baselines, args.seeds, args.rows)
+
+    if args.json:
+        import json as _json
+        # baselines: dict[domain -> float]; pareto_results: dict[domain -> list[dict]] --
+        # both already plain, JSON-serializable structures from evaluate_configuration().
+        output = {"baselines": baselines, "pareto": pareto_results}
+        print(_json.dumps(output, indent=2, default=str))
+    else:
+        experiment_3(pareto_results)
+        print_epsilon_guide()
 
 
 if __name__ == "__main__":

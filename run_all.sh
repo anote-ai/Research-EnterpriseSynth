@@ -52,13 +52,15 @@ python scripts/run_document_dp_sweep.py --json > results/document_dp_sweep.json
 echo "[5/7] Running DP mechanism comparison (Table 6)..."
 python scripts/run_dp_mechanism_comparison.py --json > results/dp_mechanism_comparison.json
 
-# ── 6. Pareto frontier (Figure 3) ────────────────────────────────────────────
-echo "[6/7] Generating Pareto frontier plots (Figure 3)..."
-python scripts/plot_pareto.py --png 2>/dev/null || python scripts/plot_pareto.py
-
-# ── 7. Product audit (supplementary) ─────────────────────────────────────────
-echo "[7/7] Running product audit (supplementary)..."
+# ── 6. Product audit (supplementary) ─────────────────────────────────────────
+echo "[6/7] Running product audit (supplementary)..."
 python scripts/run_product_audit.py --json > results/product_audit.json
+
+# ── 7. Figures (Pareto frontier + all other measured results) ──────────────
+# Runs last since plot_measured_results.py reads product_audit.json from step 6.
+echo "[7/7] Generating figures (Pareto frontier + all other measured results)..."
+python scripts/plot_pareto.py --all --png
+python scripts/plot_measured_results.py
 
 echo ""
 echo "Reproduction complete."

@@ -21,42 +21,39 @@ import json
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from privacy_benchmark.config import EPSILON_VALUES, COMPLIANCE_TIERS
-from privacy_benchmark.evaluator import evaluate_configuration
+from privacy_benchmark.config import EPSILON_VALUES
 
 # ---------------------------------------------------------------------------
-# Benchmark data — representative values from EnterpriseSynth results
-# (Appendix B of draft.md, consistent with run_epsilon_sweep.py)
+# Data source: results/epsilon_sweep.json (produced by run_epsilon_sweep.py)
+#
+# This used to be a hardcoded BENCHMARK_DATA dict of simulated values,
+# disconnected from the real Opacus DP-SGD measurements wired into
+# epsilon_sweep.json. That meant these figures never reflected the real,
+# messier, domain-dependent measured data, only the old calibrated
+# simulation. Loading from epsilon_sweep.json directly keeps the figures in
+# sync with whatever's currently measured vs. simulated there, and each
+# point's provenance (data_source) is threaded through so the chart can be
+# labeled honestly rather than presented as uniformly measured.
 # ---------------------------------------------------------------------------
 
-BENCHMARK_DATA = {
-    "tabular_hr": [
-        {"epsilon": 0.1,  "auc": 0.527, "tstr_score": 0.74, "fidelity": 0.71},
-        {"epsilon": 0.5,  "auc": 0.558, "tstr_score": 0.81, "fidelity": 0.78},
-        {"epsilon": 1.0,  "auc": 0.614, "tstr_score": 0.88, "fidelity": 0.85},
-        {"epsilon": 2.0,  "auc": 0.672, "tstr_score": 0.92, "fidelity": 0.89},
-        {"epsilon": 5.0,  "auc": 0.733, "tstr_score": 0.96, "fidelity": 0.93},
-        {"epsilon": 10.0, "auc": 0.818, "tstr_score": 0.98, "fidelity": 0.95},
-    ],
-    "financial_transactions": [
-        {"epsilon": 0.1,  "auc": 0.522, "tstr_score": 0.72, "fidelity": 0.69},
-        {"epsilon": 0.5,  "auc": 0.551, "tstr_score": 0.79, "fidelity": 0.76},
-        {"epsilon": 1.0,  "auc": 0.607, "tstr_score": 0.86, "fidelity": 0.83},
-        {"epsilon": 2.0,  "auc": 0.669, "tstr_score": 0.91, "fidelity": 0.88},
-        {"epsilon": 5.0,  "auc": 0.738, "tstr_score": 0.95, "fidelity": 0.92},
-        {"epsilon": 10.0, "auc": 0.822, "tstr_score": 0.97, "fidelity": 0.94},
-    ],
-    "healthcare_ehr": [
-        {"epsilon": 0.1,  "auc": 0.521, "tstr_score": 0.71, "fidelity": 0.68},
-        {"epsilon": 0.5,  "auc": 0.548, "tstr_score": 0.78, "fidelity": 0.75},
-        {"epsilon": 1.0,  "auc": 0.603, "tstr_score": 0.85, "fidelity": 0.82},
-        {"epsilon": 2.0,  "auc": 0.665, "tstr_score": 0.90, "fidelity": 0.87},
-        {"epsilon": 5.0,  "auc": 0.741, "tstr_score": 0.94, "fidelity": 0.91},
-        {"epsilon": 10.0, "auc": 0.825, "tstr_score": 0.96, "fidelity": 0.93},
-    ],
-}
+_EPSILON_SWEEP_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "results", "epsilon_sweep.json"
+)
 
-ALL_ASSETS = list(BENCHMARK_DATA.keys())
+
+def _load_epsilon_sweep() -> dict[str, list[dict]]:
+    if not os.path.exists(_EPSILON_SWEEP_PATH):
+        print(
+            f"error: {_EPSILON_SWEEP_PATH} not found. Run "
+            f"'python scripts/run_epsilon_sweep.py --json > results/epsilon_sweep.json' first.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    with open(_EPSILON_SWEEP_PATH) as f:
+        return json.load(f)
+
+
+ALL_ASSETS = ["tabular_hr", "financial_transactions", "healthcare_ehr"]
 
 
 # ---------------------------------------------------------------------------
@@ -90,22 +87,24 @@ def is_pareto_efficient(points: list[dict]) -> list[bool]:
     return efficient
 
 
-def evaluate_asset(asset_type: str) -> list[dict]:
-    """Evaluate all ε configurations for one asset type."""
-    raw = BENCHMARK_DATA[asset_type]
+def evaluate_asset(asset_type: str, epsilon_sweep: dict[str, list[dict]]) -> list[dict]:
+    """Return the (already-evaluated) rows for one asset type from epsilon_sweep.json."""
+    rows = epsilon_sweep.get(asset_type)
+    if not rows:
+        print(f"error: no data for asset_type={asset_type!r} in {_EPSILON_SWEEP_PATH}", file=sys.stderr)
+        sys.exit(1)
+
     results = []
-    for row in raw:
-        evaluated = evaluate_configuration(
-            epsilon=row["epsilon"],
-            auc=row["auc"],
-            tstr_score=row["tstr_score"],
-            fidelity=row["fidelity"],
-        )
-        evaluated["asset_type"] = asset_type
-        for tier_name, tier_epsilons in COMPLIANCE_TIERS.items():
-            if row["epsilon"] in tier_epsilons:
-                evaluated["tier"] = tier_name
-                break
+    for row in sorted(rows, key=lambda r: r["epsilon"]):
+        evaluated = {
+            "epsilon": row["epsilon"],
+            "privacy_score": row["privacy_score"],
+            "utility_score": row["utility_score"],
+            "fidelity_score": row["fidelity_score"],
+            "asset_type": asset_type,
+            "tier": row.get("compliance_tier"),
+            "data_source": row.get("data_source", "unknown"),
+        }
         results.append(evaluated)
 
     pareto_mask = is_pareto_efficient(results)
@@ -131,6 +130,9 @@ def print_ascii_pareto(results: list[dict], asset_type: str) -> None:
     print(f"\n{'=' * 75}")
     print(f"  Pareto Frontier: {asset_type.replace('_', ' ').title()}")
     print(f"{'=' * 75}")
+    sources = {r.get("data_source", "unknown") for r in results}
+    for s in sources:
+        print(f"  data source: {s}")
     print(f"  {'ε':>5}  {'Tier':<20} {'Privacy':>8} {'Utility':>8} {'Fidelity':>9}  {'Pareto':>7}  Privacy bar")
     print(f"  {'-'*5}  {'-'*20} {'-'*8} {'-'*8} {'-'*9}  {'-'*7}  {'-'*20}")
     for r in results:
@@ -219,7 +221,12 @@ def save_png_charts(all_results: dict[str, list[dict]], output_dir: str) -> None
                    "utility_focused": "Utility-focused (ε=5–10)"}
 
     # --- Chart 1: Privacy vs Utility per asset type ---
-    fig, axes = plt.subplots(1, len(all_results), figsize=(5 * len(all_results), 4.5), sharey=True)
+    # sharey=False deliberately: the real measured data has wildly different
+    # utility ranges per domain (financial up to ~0.77, HR/healthcare under
+    # ~0.2) -- that spread IS the headline finding (5.1.1 in the paper), so
+    # forcing a shared y-axis would either clip most domains' data out of
+    # view or flatten the very difference the figure exists to show.
+    fig, axes = plt.subplots(1, len(all_results), figsize=(5 * len(all_results), 4.5), sharey=False)
     if len(all_results) == 1:
         axes = [axes]
 
@@ -244,19 +251,39 @@ def save_png_charts(all_results: dict[str, list[dict]], output_dir: str) -> None
                     "k--", linewidth=0.8, alpha=0.4, zorder=4)
 
         ax.set_xlabel("Privacy Score (1 − MIA AUC)", fontsize=10)
-        if ax is axes[0]:
-            ax.set_ylabel("Utility Score (TSTR F1)", fontsize=10)
+        ax.set_ylabel("Utility Score (TSTR F1)", fontsize=10)
         ax.set_title(asset.replace("_", " ").title(), fontsize=11, fontweight="bold")
-        ax.set_xlim(0.40, 0.60)
-        ax.set_ylim(0.60, 1.05)
+        # Axis limits are computed from the actual data rather than hardcoded:
+        # the real measured DP-SGD data has a much wider utility range (down to
+        # 0.0) and a narrower privacy range (~0.49-0.53, since this pilot-scale
+        # model shows little exploitable MIA signal at any tested ε) than the
+        # old simulated data did.
+        all_priv = [r["privacy_score"] for r in results]
+        all_util = [r["utility_score"] for r in results]
+        priv_pad = max(0.01, (max(all_priv) - min(all_priv)) * 0.2)
+        util_pad = max(0.02, (max(all_util) - min(all_util)) * 0.15)
+        ax.set_xlim(min(all_priv) - priv_pad, max(all_priv) + priv_pad)
+        ax.set_ylim(max(0.0, min(all_util) - util_pad), max(all_util) + util_pad)
         ax.grid(True, alpha=0.3, linestyle=":")
         ax.axvline(0.5, color="gray", linestyle=":", linewidth=0.8, alpha=0.5)
-        ax.text(0.502, 0.62, "Random-guess\nprivacy", fontsize=6, color="gray", va="bottom")
 
+    sources = {r.get("data_source", "unknown") for res in all_results.values() for r in res}
+    provenance = "measured" if all("measured" in s for s in sources) else "mixed measured/simulated"
+    fidelity_sources = {r.get("fidelity_source", "") for res in all_results.values() for r in res}
+    fidelity_note = (
+        "fidelity also measured" if fidelity_sources and all("simulated" not in s for s in fidelity_sources)
+        else "fidelity still simulated" if all("measured" not in s for s in fidelity_sources)
+        else "fidelity mixed measured/simulated"
+    )
     patches = [mpatches.Patch(color=c, label=tier_labels[k]) for k, c in colors.items()]
     fig.legend(handles=patches, loc="upper center", ncol=3, fontsize=9,
                bbox_to_anchor=(0.5, 1.02))
-    fig.suptitle("EnterpriseSynth: Privacy–Utility Pareto Frontier", fontsize=13, y=1.06)
+    fig.suptitle(
+        f"EnterpriseSynth: Privacy-Utility Pareto Frontier ({provenance} privacy/utility; "
+        f"{fidelity_note})\nNote: y-axes are NOT shared across panels -- "
+        f"utility ranges differ by an order of magnitude across domains",
+        fontsize=10, y=1.1,
+    )
     plt.tight_layout()
     path1 = os.path.join(output_dir, "pareto_privacy_utility.png")
     plt.savefig(path1, dpi=150, bbox_inches="tight")
@@ -281,18 +308,43 @@ def save_png_charts(all_results: dict[str, list[dict]], output_dir: str) -> None
             ax.semilogx(eps_vals, vals, ls, color=metric_colors[metric],
                         alpha=alpha, linewidth=2 if alpha > 0.6 else 1, label=label)
 
+    # y-axis range from actual data: real measured utility can go down to 0.0
+    # (e.g. HR/adult at low ε), unlike the old simulated data which never
+    # dropped below ~0.55.
+    all_vals = [
+        r[metric]
+        for results in all_results.values()
+        for r in results
+        for metric in ("privacy_score", "utility_score", "fidelity_score")
+    ]
+    y_lo = max(0.0, min(all_vals) - 0.05)
+    y_hi = min(1.05, max(all_vals) + 0.08)
+
     # Shade compliance tiers
     ax.axvspan(0.09, 0.55, alpha=0.06, color="#e74c3c", label=None)
     ax.axvspan(0.9, 2.2, alpha=0.06, color="#2ecc71", label=None)
     ax.axvspan(4.5, 11, alpha=0.06, color="#3498db", label=None)
-    ax.text(0.15, 1.01, "Strict", fontsize=8, color="#c0392b", ha="center")
-    ax.text(1.4, 1.01, "Balanced", fontsize=8, color="#27ae60", ha="center")
-    ax.text(7.0, 1.01, "Utility-focused", fontsize=8, color="#2980b9", ha="center")
+    label_y = y_hi - 0.03
+    ax.text(0.15, label_y, "Strict", fontsize=8, color="#c0392b", ha="center")
+    ax.text(1.4, label_y, "Balanced", fontsize=8, color="#27ae60", ha="center")
+    ax.text(7.0, label_y, "Utility-focused", fontsize=8, color="#2980b9", ha="center")
+
+    fidelity_sources = {
+        r.get("fidelity_source", "") for res in all_results.values() for r in res
+    }
+    fidelity_provenance = (
+        "measured" if fidelity_sources and all("simulated" not in s for s in fidelity_sources)
+        else "simulated" if all("measured" not in s for s in fidelity_sources)
+        else "mixed measured/simulated"
+    )
 
     ax.set_xlabel("ε (privacy budget, log scale)", fontsize=11)
     ax.set_ylabel("Score", fontsize=11)
-    ax.set_title("Privacy · Utility · Fidelity vs. ε — EnterpriseSynth", fontsize=12)
-    ax.set_ylim(0.40, 1.07)
+    ax.set_title(
+        f"Privacy, Utility, Fidelity vs. ε (privacy/utility measured, fidelity {fidelity_provenance})",
+        fontsize=11,
+    )
+    ax.set_ylim(y_lo, y_hi)
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=8, loc="lower right")
     plt.tight_layout()
@@ -319,8 +371,9 @@ def main() -> None:
     assets = ALL_ASSETS if (args.asset == "all" or args.show_all) else [args.asset]
     all_results: dict[str, list[dict]] = {}
 
+    epsilon_sweep = _load_epsilon_sweep()
     for asset in assets:
-        all_results[asset] = evaluate_asset(asset)
+        all_results[asset] = evaluate_asset(asset, epsilon_sweep)
 
     if args.json:
         print(json.dumps(all_results, indent=2))
