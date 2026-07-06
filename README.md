@@ -38,15 +38,16 @@ The current repository includes:
 | Experiment | Current status | Best entrypoint |
 | --- | --- | --- |
 | Real baseline (no-DP) | Measured and reproducible in-repo | `python scripts/run_baseline_sdg.py` |
-| ε sweep — Pareto curves | Calibrated simulation; domain-varying curves | `python scripts/run_epsilon_sweep.py` |
+| ε sweep — Pareto curves | **Measured (pilot scale)** — real Opacus DP-SGD, 5-seed mean; fidelity column still simulated | `python scripts/run_epsilon_sweep.py` |
 | DP real integration | Oracle + no-DP TSTR measured; DP F1 estimated | `python scripts/run_dp_real_integration.py` |
-| Downstream task diversity | Classification F1 measured; regression/anomaly estimated | `python scripts/run_downstream_tasks.py` |
+| Downstream task diversity | Classification/regression/anomaly no-DP baselines measured; DP values estimated | `python scripts/run_downstream_tasks.py` |
 | Model collapse study | Measured in controlled simulation pipeline | `python scripts/run_collapse_study.py` |
 | DP mechanism comparison | Gaussian / Laplace / Discrete run directly | `python scripts/run_dp_mechanism_comparison.py` |
-| Real DP-SGD sweep | Pending — requires `pip install opacus torch` | `python scripts/run_opacus_dp_sweep.py` |
+| Real DP-SGD sweep | Opacus-backed DPVAE, full 3-domain × 6-ε × 5-seed sweep measured and committed | `python scripts/run_opacus_dp_sweep.py` |
 
 Useful repository documents:
 
+- [ONE_PAGER.md](ONE_PAGER.md) — 2-minute summary: core findings, provenance at a glance, and what's still open
 - [DESIGN_DOC.md](DESIGN_DOC.md)
 - [RESEARCH_STATUS.md](RESEARCH_STATUS.md) — full real vs. simulated provenance for every result file
 - [paper/draft.md](paper/draft.md) — full paper draft (Abstract through Appendices)
@@ -59,7 +60,7 @@ These are the current repo-verified findings, not a claim that every paper-ready
 
 **Real baseline (measured):** TVAE retains 94.3% of oracle F1 on HR data; CTGAN retains 98.3% on financial data; GaussianCopula retains 91.4% on healthcare EHR. These establish the utility ceiling before DP is applied.
 
-**ε sweep (calibrated simulation, domain-varying):** At ε=2 (HIPAA-compatible tier, δ=1e-5), estimated DP utility retention is 79–81% across tabular enterprise domains. Utility cliff (below 90% baseline) persists for all domains at ε ≤ 5. Financial transactions degrade fastest — need ε=5 to match HR utility at ε=2.
+**ε sweep (measured, pilot-scale Opacus DP-SGD):** At ε=2 (HIPAA-compatible tier, δ=1e-5), measured DP utility retention is domain-dependent: 18% (HR), 91% (financial), 20% (healthcare) — real DP-SGD training on small real datasets shows far more variance and less uniformity than the earlier calibrated simulation suggested. Notably, financial transactions is the *most* DP-robust domain measured here, the opposite of the design doc's original "financial degrades fastest" hypothesis. See [RESEARCH_STATUS.md](RESEARCH_STATUS.md) and paper/draft.md Section 5.1.1 for the full discussion, including known training-instability limitations of the pilot-scale DPVAE synthesizer.
 
 **Model collapse (measured in controlled pipeline):** Tail-record entropy drops to warning threshold by generation 2–3 and critical threshold by generation 5 at a 30% collapse rate. Fraud and security-class records fall below 0.5% representation by generation 7 without mitigation. Real-data anchoring and diversity-rewarded sampling both keep tail diversity within 10% of generation-0 baseline.
 
@@ -77,7 +78,7 @@ This repository intentionally tracks more than one kind of result:
 | **Estimated** | Calibrated retention curves applied to real measured baselines (e.g. DP F1 = oracle × retention(ε)) |
 | **Simulated** | DomainSpec logistic model outputs — no real DP-SGD training; domain-ordered and monotone by design |
 
-For the ε sweep and Table 2 DP columns, the default scripts produce **calibrated simulation results**. These are directionally sound, domain-varying, and reproducible, but they should not be cited as measured DP-SGD training numbers until `scripts/run_opacus_dp_sweep.py` has been run and `results/real_dp_sweep.json` committed. See [RESEARCH_STATUS.md](RESEARCH_STATUS.md) for the full accounting.
+The ε sweep and Table 2 DP columns are now **measured** from a real, pilot-scale Opacus DP-SGD training pipeline (`scripts/run_opacus_dp_sweep.py`, committed in `results/real_dp_sweep.json`), not a calibrated simulation. This measured data is noisier and less uniform across domains than the earlier simulation — some domains show non-monotonic behavior at extreme ε values, which we report as-is rather than smoothing over. Fidelity remains simulated (no real fidelity metric has been computed on the DPVAE output yet). See [RESEARCH_STATUS.md](RESEARCH_STATUS.md) for the full accounting, including known limitations of the pilot-scale synthesizer.
 
 ---
 
@@ -88,7 +89,7 @@ Real Enterprise Dataset (HR / EHR / Financial / IoT / E-commerce)
         |
         v
   [DP-SGD Synthesizer]  ←── ε, δ=1e-5 budget
-  (CTGAN / TVAE / GaussianCopula + Opacus)
+  (Opacus-backed DPVAE; non-DP baselines use CTGAN / TVAE / GaussianCopula)
         |
         v
   Synthetic Dataset
@@ -128,9 +129,9 @@ python scripts/run_epsilon_sweep.py
 # Real-data baselines (Adult Income, Credit-G, Diabetes PIMA) — takes ~20 min
 python scripts/run_baseline_sdg.py
 
-# Real DP-SGD sweep via Opacus — requires pip install opacus torch
+# Real DP-SGD sweep via Opacus-backed DPVAE — requires pip install opacus torch
 python scripts/run_opacus_dp_sweep.py --dry-run   # check deps
-python scripts/run_opacus_dp_sweep.py             # full run (~2h)
+python scripts/run_opacus_dp_sweep.py --json > results/real_dp_sweep.json
 ```
 
 ```python
@@ -166,6 +167,90 @@ bash run_all.sh          # full reproduction (~25 min, CPU only)
 bash run_all.sh --quick  # smoke test (~3 min)
 python -m pytest tests/ -v  # 296 tests
 ```
+
+---
+
+## Figures
+
+All figures in `paper/figures/` are generated directly from committed `results/*.json` files (`scripts/plot_pareto.py` and `scripts/plot_measured_results.py`), so they always match whatever is currently measured vs. simulated in those files:
+
+| Figure | Experiment | Provenance |
+| --- | --- | --- |
+| `pareto_privacy_utility.png`, `epsilon_tradeoff_curves.png` | ε sweep — Pareto curves | Privacy/utility measured (real DP-SGD); fidelity simulated |
+| `baseline_synthesizer_comparison.png` | Real no-DP synthesizer baseline | Measured |
+| `collapse_mitigation_comparison.png` | Model collapse mitigation | Measured |
+| `downstream_tasks_retention.png` | Downstream task diversity | No-DP baselines measured; DP retention estimated |
+| `document_dp_sweep.png` | Document DP sweep | Simulated |
+| `dp_mechanism_comparison.png` | DP mechanism comparison | Gaussian/Laplace/discrete measured; randomized_response estimated |
+| `fidelity_correlation.png` | Fidelity-utility correlation | Simulated |
+| `product_audit_violations.png` | Product audit | Mixed measured/estimated (color-coded in the figure) |
+
+Regenerate all of them with:
+
+```bash
+python scripts/plot_pareto.py --all --png
+python scripts/plot_measured_results.py
+```
+
+---
+
+## Demo Runbook (~8 minutes, fully offline)
+
+Every headline result runs from committed data — no API key required.
+Only Step 4 (real DP training) needs `pip install opacus torch`; it has an offline fallback.
+
+### 0. Setup
+
+```bash
+python3.12 -m pip install -e ".[dev]"
+python3.12 -m pytest -q          # expect: 296 passed
+```
+
+### 1. Real baseline — which synthesizer wins per domain? (~30 sec)
+
+```bash
+python3.12 scripts/run_dp_real_integration.py
+```
+
+Shows the compliance-tier table with real measured F1 on Adult Income, Credit-G, and Diabetes PIMA. TVAE retains 94.3% on HR; CTGAN 98.3% on financial — the utility ceiling before any DP is applied.
+
+### 2. Privacy-utility Pareto curves — now from real DP-SGD training (~5 sec to reload committed results)
+
+```bash
+python3.12 scripts/run_epsilon_sweep.py
+```
+
+Loads the real, pilot-scale Opacus DP-SGD sweep (`results/real_dp_sweep.json`) per domain/ε. Financial transactions is the most DP-robust domain measured (91% retention at ε=2) — the opposite of the original per-domain sensitivity multiplier hypothesis, which predicted financial data would degrade fastest. HR and healthcare show much lower, noisier retention. See paper/draft.md Section 5.1.1 for why this contradicts the earlier simulated narrative and what it does/doesn't tell us given the small pilot scale.
+
+### 3. Model collapse — what happens after 5 generations? (~10 sec)
+
+```bash
+python3.12 scripts/run_collapse_study.py
+```
+
+At a 30% iterative reuse rate, tail entropy hits critical threshold by generation 5; fraud/security records fall below 0.5% by generation 7. Real-data anchoring and diversity-rewarded sampling both keep tail diversity within 10% of baseline indefinitely.
+
+### 4. (Optional) Real DP training via Opacus-backed DPVAE
+
+```bash
+# Real run — DP-SGD with Opacus privacy accounting.
+# Writes to results/real_dp_sweep.json — never overwrites epsilon_sweep.json.
+python3.12 scripts/run_opacus_dp_sweep.py --synthesizer DPVAE \
+    --json > results/real_dp_sweep.json
+
+# No time? Offline fallback (calibrated simulation, identical interface):
+python3.12 scripts/run_epsilon_sweep.py
+```
+
+**If something fails:**
+
+| Problem | Fix |
+|---|---|
+| `No module named 'sdv'` | `python3.12 -m pip install sdv` — must use Python 3.12 specifically |
+| `No module named 'opacus'` | Skip Step 4; use `run_epsilon_sweep.py` fallback. Steps 1–3 fully offline |
+| `results/pareto_study.json` empty | `python3.12 scripts/run_pareto_study.py > results/pareto_study.json` |
+
+**Never overwrite committed data** — any real DP run writes to `results/real_dp_sweep.json`, never to `results/epsilon_sweep.json`. Steps 1–3 read only committed JSON files and reproduce identically on every machine.
 
 ---
 

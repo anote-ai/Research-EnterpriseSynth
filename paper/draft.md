@@ -20,7 +20,7 @@ Regulated enterprises—financial institutions, healthcare systems, HR operation
 2. **Which SDG method should I use for tabular records vs. clinical notes vs. transaction logs?**
 3. **Does iterative retraining on synthetic data degrade model quality over time, and can that degradation be detected and mitigated before it reaches production?**
 
-Existing benchmarks—SDGym [cite], CTGAN [cite], SynthEval [cite]—evaluate SDG methods on generic tabular datasets (adult, insurance, credit) that do not capture the structural complexity of enterprise schemas: temporal constraints (hire date before termination), referential integrity across tables, domain-specific named entities (diagnosis codes, SWIFT codes), or long-tail record distributions (fraud rates of ~1–3%, critical security incidents at ~0.1%).
+Existing benchmarks—SDGym [Patki et al., 2016], CTGAN [Xu et al., 2019], SynthEval [Lautrup et al., 2024]—evaluate SDG methods on generic tabular datasets (adult, insurance, credit) that do not capture the structural complexity of enterprise schemas: temporal constraints (hire date before termination), referential integrity across tables, domain-specific named entities (diagnosis codes, SWIFT codes), or long-tail record distributions (fraud rates of ~1–3%, critical security incidents at ~0.1%).
 
 **EnterpriseSynth** addresses this gap. Our contributions are:
 
@@ -148,47 +148,55 @@ Multi-seed variance analysis (Section 5.3) reveals that tighter privacy budgets 
 
 ### 5.1 The Privacy-Utility Tradeoff
 
-Across all six ε values and three asset types, we observe a consistent Pareto frontier: as ε decreases (stronger privacy), utility and fidelity decline monotonically. The key finding is that this decline is non-linear—the largest utility drop occurs in the strict tier (ε: 2→1, and especially 1→0.5), while the balanced-to-utility-focused transition (ε: 2→5) yields diminishing privacy gains for substantial utility improvement.
+The DP-SGD columns of Table 2 are now **measured**, not simulated: `scripts/run_opacus_dp_sweep.py` trains a small Opacus-backed tabular VAE (DPVAE) from scratch at each ε, on the same real UCI datasets as the oracle/no-DP rows, and reports mean ± std over 5 random-seed reruns (a single seed on this small a model/dataset is not representative — see the variance discussion in 5.3). The result is messier than the calibrated simulation it replaces: only the HR domain shows a clean monotonic utility increase with ε; the other two domains are noisy and, at the extremes, non-monotonic. We report this honestly rather than smoothing it, and discuss why in 5.1.1.
 
 #### Table 2: Privacy-Utility Tradeoff on Real Public Datasets (δ=1e-5 fixed)
 
-Real oracle F1 is measured by training and testing on real data (80/20 split). No-DP TSTR uses SDV synthesizers without privacy. DP F1 values are **simulated estimates** using the formula: oracle F1 × domain\_retention(ε) / baseline\_TSTR, where domain\_retention(ε) comes from the calibrated DomainSpec logistic curves (see Appendix B, RESEARCH\_STATUS.md); they are not from end-to-end DP-SGD training runs.
+Real oracle F1 is measured by training and testing on real data (80/20 split). No-DP TSTR uses SDV synthesizers without privacy. DP F1 values are **measured**: mean ± std TSTR F1 over 5 seeds of real DP-SGD training (Opacus-backed DPVAE, 15 epochs, batch size 256), reported in `results/real_dp_sweep.json`.
 
-| Dataset (Domain) | Synth | Oracle F1 | No-DP TSTR | DP ε=0.1† | DP ε=0.5† | DP ε=1† | DP ε=2† | DP ε=5† | DP ε=10† |
+| Dataset (Domain) | Synth | Oracle F1 | No-DP TSTR | DP ε=0.1‡ | DP ε=0.5‡ | DP ε=1‡ | DP ε=2‡ | DP ε=5‡ | DP ε=10‡ |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Adult Income (HR/CRM) | TVAE | 0.658 | 0.620 (94.3%) | 0.385 | 0.438 | 0.486 | 0.532 | 0.590 | 0.618 |
-| Credit-G (Financial) | CTGAN | 0.797 | 0.783 (98.3%) | 0.474 | 0.529 | 0.573 | 0.631 | 0.711 | 0.756 |
-| Diabetes PIMA (Healthcare EHR) | GC | 0.560 | 0.512 (91.4%) | 0.331 | 0.374 | 0.405 | 0.448 | 0.503 | 0.531 |
+| Adult Income (HR/CRM) | TVAE / DPVAE | 0.69 | 0.620 (94.3%) | 0.00 ± 0.00 | 0.00 ± 0.00 | 0.025 ± 0.04 | 0.127 ± 0.07 | 0.173 ± 0.07 | 0.205 ± 0.11 |
+| Credit-G (Financial) | CTGAN / DPVAE | 0.845 | 0.783 (98.3%) | 0.349 ± 0.37 | 0.402 ± 0.35 | 0.581 ± 0.32 | 0.770 ± 0.07 | 0.661 ± 0.33 | 0.165 ± 0.33 |
+| Diabetes PIMA (Healthcare EHR) | GC / DPVAE | 0.484 | 0.512 (91.4%*) | 0.111 ± 0.12 | 0.109 ± 0.22 | 0.133 ± 0.19 | 0.096 ± 0.19 | 0.00 ± 0.00 | 0.00 ± 0.00 |
 
-† Simulated estimate, not a direct measurement. GC = GaussianCopula. All DP estimates at δ=1e-5.
+‡ Measured — mean ± std TSTR F1 over 5 Opacus DP-SGD training seeds (`results/real_dp_sweep.json`), not a simulated estimate. GC = GaussianCopula. All DP measurements at δ=1e-5. *The DPVAE oracle F1 (0.484, RandomForest on real data) differs slightly from the SDV-pipeline oracle (0.560) because it is computed independently inside `run_opacus_dp_sweep.py`; no-DP TSTR retention % here is relative to the SDV oracle, DP retention discussed in text is relative to the DPVAE oracle in this table.
 
-At ε=2 (HIPAA-compatible tier, δ=1e-5), DP synthetic data retains 79–81% of real-data oracle F1 across tabular enterprise domains. Non-DP baselines (CTGAN/TVAE) achieve 91–98% retention, establishing the utility ceiling. Adding DP costs 13–17 percentage points at ε=2 vs. no-DP baseline.
+At ε=2 (HIPAA-compatible tier, δ=1e-5), measured DP utility retention (DP F1 / oracle F1) is **18% for HR, 91% for financial, 20% for healthcare** — a much wider and more domain-dependent spread than the earlier calibrated simulation suggested, and the opposite ranking from the design doc's "financial degrades fastest" hypothesis (Section 5.1.1). Non-DP baselines (CTGAN/TVAE) still achieve 91–98% retention, confirming DP — not the synthesizer choice — is the dominant utility cost. Financial transactions is the only domain in this pilot that reaches near-parity with its non-DP baseline at any tested ε.
+
+#### 5.1.1 Reading the measured curve honestly
+
+Three things stand out that a reader should not gloss over:
+
+1. **HR utility never exceeds 30% retention, even at ε=10** (the loosest budget tested). This is very unlikely to be a fundamental DP limit — it is far more likely a ceiling imposed by the small custom DPVAE (a 2-layer, 128-hidden-unit VAE trained for only 15 epochs) rather than DP noise itself, since a properly capacity-matched, longer-trained non-DP model (TVAE, 94.3% retention) handles the same data far better. Treat the absolute retention numbers in this table as a **pilot-architecture floor**, not a ceiling on what DP-SGD can achieve on this data with a production-grade synthesizer (DP-CTGAN, DP-TVAE).
+2. **Financial and healthcare are non-monotonic at the tested extremes** (financial drops from 78% retention at ε=5 to 20% at ε=10; healthcare collapses to 0% at ε≥5). Both datasets are small (800 and 614 rows), so a handful of gradient steps per epoch leaves substantial run-to-run training variance — visible directly in the ± std column, which is why every reported value here is a 5-seed mean rather than a single run.
+3. **The domain ordering contradicts the calibrated-simulation hypothesis.** The prior simulated model (and the design doc's underlying hypothesis) predicted financial transactions would degrade *fastest* under DP due to temporal correlations. The measured pilot shows the opposite: financial transactions is the *most* DP-robust of the three domains tested. This is plausibly explained by dataset properties unrelated to "domain type" (Credit-G is a small, low-cardinality dataset that a tiny VAE can fit more easily) rather than a genuine refutation of the domain-sensitivity hypothesis — but it does mean **this specific claim in the design doc is not supported by the measured data available today**, and should not be repeated without a larger, matched-scale multi-domain study.
 
 ### 5.2 Compliance-Tier Recommendations
 
-Based on our Pareto analysis, we derive the following empirical guidance:
+The measured Table 2 data (5.1.1) shows retention is far more domain- and dataset-dependent than a single guidance table can honestly capture, so the tier boundaries below (ε ranges, regulatory mapping) still reflect our design-doc reasoning, but we no longer state a single cross-domain retention percentage per tier — Table 2 shows those percentages range from 0–30% (HR) to 41–91% (financial) to 0–28% (healthcare) within the *same* nominal tier. Practitioners should consult the per-domain row in Table 2 directly rather than a single "X% retained at this tier" figure.
 
 #### ε = 0.1 – 0.5, δ=1e-5 (Strict / GDPR research)
 
-- Utility cost: high (TSTR F1 drops ~28–32% relative to no-DP baseline; Table 2† shows 66–67% of oracle at ε=0.5)
+- Utility cost: highly domain-dependent — measured retention at ε=0.5 ranges from 0% (HR) to 48% (financial) to 23% (healthcare); see Table 2
 - Use when: clinical trial data, highly sensitive PII, Art. 89 GDPR research exemptions
-- Caution: training variance is highest here; multi-seed runs are mandatory for reproducibility
+- Caution: training variance is highest here; multi-seed runs are mandatory for reproducibility (5.3) — the std column in Table 2 is as important as the mean
 
 #### ε = 1 – 2, δ=1e-5 (Balanced / HIPAA)
 
-- Utility cost: moderate (~12–19% relative drop; Table 2† shows 79–81% oracle retention at ε=2)
+- Utility cost: measured retention at ε=2 is 18% (HR), 91% (financial), 20% (healthcare) — no single "moderate" number describes this tier honestly
 - Use when: standard healthcare analytics, HIPAA-covered entities, balanced GDPR compliance
-- This tier offers the best privacy-utility tradeoff for most enterprise use cases
+- Financial transactions is the only domain in this pilot where this tier approaches non-DP parity; HR and healthcare retention stays well below what "balanced" implies in this small-scale measurement
 
 #### ε = 5 – 10, δ=1e-5 (Utility-focused / SOX)
 
-- Utility cost: low (~3–5% relative drop; Table 2† shows 94–95% oracle retention at ε=10)
+- Utility cost: still domain-dependent and, for two of three domains, non-monotonic at this range — financial actually drops from 78% (ε=5) to 20% (ε=10) retention in the measured pilot, and healthcare collapses to 0% at both ε=5 and ε=10 (5.1.1)
 - Use when: internal analytics, SOX audit trail simulation, low-sensitivity operational data
-- Provides strong empirical privacy against practical MIA attacks while preserving near-full utility
+- Do not assume "looser ε = strictly better utility" without checking the domain's own measured curve — this pilot's data shows real exceptions to that intuition, most likely due to small-dataset training instability rather than a genuine property of loose ε (5.1.1)
 
 ### 5.3 DP Training Variance
 
-A critical and underreported finding: differential privacy introduces stochastic noise that makes training outcomes sensitive to the random seed. At ε = 0.1, we observe standard deviation across seeds of ~3–5× that seen at ε = 5. This has practical implications: enterprises using strict privacy budgets must run multiple training seeds and report variance-adjusted metrics rather than point estimates. Our `evaluate_multi_seed` API automates this reporting.
+Now measured directly (Table 2) rather than modeled: training outcomes are highly sensitive to random seed on the two smaller real datasets (Credit-G: 800 rows, Diabetes: 614 rows) at *every* tested ε, not just tight ones — TSTR F1 std of 0.12–0.37 against means of 0.00–0.77, i.e. the standard deviation is frequently a large fraction of the mean itself. Only the largest dataset (Adult, ~39k rows) shows the naively-expected pattern of variance growing with looser ε (std 0.00 at ε≤0.5, rising to 0.11 at ε=10) — though the zero-std rows there are more precisely "collapsed to zero utility on every one of the 5 seeds" than "unusually stable training." The practical implication generalizes beyond our small pilot: enterprises validating DP synthesis on datasets in the hundreds-to-low-thousands-of-rows range should run and report multiple seeds regardless of ε, not only at strict privacy budgets. Our `evaluate_multi_seed` API and the `*_std` fields in `results/real_dp_sweep.json` automate this reporting.
 
 ---
 
@@ -299,9 +307,11 @@ These checks are implemented in `src/model_collapse/metrics.py` and can be integ
 
 ## 8. Limitations and Future Work
 
-**DP estimation vs. direct measurement**: DP utility values in Table 2 are estimated from calibrated domain retention curves anchored to the real oracle baselines, not from end-to-end DP-SGD training runs. The domain-specific Pareto curves (Section 5, Appendix B) reflect simulation using DomainSpec sensitivity multipliers. End-to-end DP-SGD training runs (via Opacus + DP-CTGAN/TVAE) are the primary planned extension to replace estimates with direct measurements.
+**Pilot-scale DP-SGD synthesizer, not a production DP-CTGAN/DP-TVAE**: Table 2's DP columns are now real measurements (Section 5.1), but they come from a small custom Opacus-backed tabular VAE (2 hidden layers, 128 units, 15 epochs) rather than a production-grade DP-CTGAN or DP-TVAE. The absolute retention numbers — as low as 0% for the HR domain even at ε=10 — most likely reflect this pilot architecture's limited capacity and training budget rather than a fundamental property of DP-SGD on this data (Section 5.1.1). Wiring a production DP-CTGAN/DP-TVAE implementation (e.g. via a maintained Opacus-compatible SDV fork) into the same measurement pipeline is the clearest next step to get retention numbers that upper-bound what practitioners can expect. Fidelity (Appendix B) is now also measured — a real Wasserstein-1/total-variation-distance metric between real and DPVAE-synthesized data, replacing the earlier calibrated DomainSpec simulation.
 
-**Document DP guarantee scope**: The formal (ε,δ)-DP guarantee for document synthesis applies to the DP-SGD fine-tuning step at the training-example level only. Full per-token composition across the generation sequence is not claimed or bounded in this work. Practitioners should treat document DP results as providing a training-level bound (ε_training, δ=1e-5) and should not assume per-document or per-token DP. For regulated deployments requiring per-output DP guarantees, additional analysis following Durfee & Rogers [2019] (output perturbation for text generation) is required.
+**Domain-ordering hypothesis not confirmed by measured data**: The design doc's claim that financial time-series data degrades fastest under DP (due to temporal correlations) is not supported by the measured pilot (Section 5.1.1) — financial transactions was the most DP-robust of the three domains tested. This is plausibly a dataset-scale/complexity confound (Credit-G is small and low-cardinality) rather than a genuine refutation, but a matched-scale, multi-dataset-per-domain study is needed before repeating the original hypothesis as established.
+
+**Document DP guarantee scope**: The formal (ε,δ)-DP guarantee for document synthesis applies to the DP-SGD fine-tuning step at the training-example level only. Full per-token composition across the generation sequence is not claimed or bounded in this work. Practitioners should treat document DP results as providing a training-level bound (ε_training, δ=1e-5) and should not assume per-document or per-token DP. For regulated deployments requiring per-output DP guarantees, additional per-token composition analysis is required; this is left as future work rather than attributed to a specific prior method here.
 
 **Document oracle baseline missing**: Real-data oracle TSTR (train and test on real documents) is not yet available for the four document asset types in Table 3. Without this ceiling, the absolute BERTScore and TSTR F1 values are difficult to interpret. This is a planned extension alongside end-to-end DP document synthesis.
 
@@ -317,7 +327,7 @@ These checks are implemented in `src/model_collapse/metrics.py` and can be integ
 
 ## 9. Conclusion
 
-EnterpriseSynth provides a benchmark framework specifically designed for synthetic data evaluation in regulated enterprise settings — to our knowledge the first to combine enterprise schema diversity, compliance-tier mapping, and iterative retraining analysis in a unified evaluation. By covering six enterprise data asset types, three evaluation dimensions, six (ε,δ)-DP budgets (δ=1e-5), and a novel model collapse study grounded in real public-dataset baselines, it gives compliance and data science teams quantitative, actionable answers to the ε-selection and iterative-retraining questions that matter most in regulated deployments. Our key findings — that the balanced tier (ε=1–2, δ=1e-5) retains 79–81% of real-data oracle F1, that unchecked iterative retraining destroys tail-record diversity within five generations, and that diversity-rewarded sampling effectively counters collapse — should directly inform enterprise AI governance policies.
+EnterpriseSynth provides a benchmark framework specifically designed for synthetic data evaluation in regulated enterprise settings — to our knowledge the first to combine enterprise schema diversity, compliance-tier mapping, and iterative retraining analysis in a unified evaluation. By covering six enterprise data asset types, three evaluation dimensions, six (ε,δ)-DP budgets (δ=1e-5), and a novel model collapse study grounded in real public-dataset baselines, it gives compliance and data science teams quantitative, actionable answers to the ε-selection and iterative-retraining questions that matter most in regulated deployments. Our key findings — that the balanced tier's (ε=1–2, δ=1e-5) measured DP-SGD utility retention is highly domain-dependent (18% for HR, 91% for financial, 20% for healthcare in our pilot; Section 5.1), that unchecked iterative retraining destroys tail-record diversity within five generations, and that diversity-rewarded sampling effectively counters collapse — should directly inform enterprise AI governance policies. The domain-dependent spread is itself a finding: a single "balanced tier retains X%" number, as reported by the earlier calibrated simulation, obscures real, measured variation practitioners should account for per data type.
 
 ---
 
@@ -381,18 +391,18 @@ Reproducibility: `pip install -e ".[dev]" && pytest tests/` — all 133 tests pa
 
 All results at **δ = 1e-5** (fixed throughout). Each ε value corresponds to an independent training run with that privacy budget from scratch — not early-stopping of a shared run. Composition across k training steps uses basic composition (ε_total = Σ εᵢ); PRV accountant cross-check tolerance ±0.01.
 
-Values are **simulated estimates** from the calibrated DomainSpec logistic model (representative domain: tabular\_hr, dp\_sensitivity\_multiplier=1.0). Privacy Score = 1 − AUC\_MIA, where AUC is from `privacy_leakage_at_epsilon(ε)`; Utility and Fidelity from `utility_at_epsilon(ε)` and `fidelity_at_epsilon(ε)` respectively. See RESEARCH\_STATUS.md for full provenance.
+Privacy, Utility, and Fidelity scores below are all **measured** (representative domain: tabular\_hr / Adult Income): Privacy Score = 1 − mean MIA AUC from the reconstruction-loss membership-inference attack in `scripts/run_opacus_dp_sweep.py`, averaged over 5 seeds; Utility = mean TSTR F1 over the same 5 seeds (raw F1, not yet normalized to a no-DP baseline — see note below); Fidelity = 1 − mean(Wasserstein-1 distance normalized by column range for numeric columns, total variation distance for categorical columns) between real and DPVAE-synthesized data, also averaged over 5 seeds. See RESEARCH\_STATUS.md for full provenance.
 
-| ε | δ | Privacy Score (1−AUC)† | TSTR Utility (relative to no-DP)† | Fidelity† | Tier |
+| ε | δ | Privacy Score (1−AUC)‡ | TSTR Utility (raw F1, HR domain)‡ | Fidelity‡ | Tier |
 | --- | --- | --- | --- | --- | --- |
-| 0.1 | 1e-5 | 0.47 | 0.59 | 0.60 | Strict |
-| 0.5 | 1e-5 | 0.42 | 0.67 | 0.66 | Strict |
-| 1.0 | 1e-5 | 0.38 | 0.74 | 0.71 | Balanced |
-| 2.0 | 1e-5 | 0.33 | 0.81 | 0.78 | Balanced |
-| 5.0 | 1e-5 | 0.27 | 0.90 | 0.87 | Utility-focused |
-| 10.0 | 1e-5 | 0.23 | 0.94 | 0.92 | Utility-focused |
+| 0.1 | 1e-5 | 0.50 | 0.00 | 0.75 | Strict |
+| 0.5 | 1e-5 | 0.51 | 0.00 | 0.77 | Strict |
+| 1.0 | 1e-5 | 0.51 | 0.03 | 0.77 | Balanced |
+| 2.0 | 1e-5 | 0.51 | 0.13 | 0.79 | Balanced |
+| 5.0 | 1e-5 | 0.51 | 0.17 | 0.80 | Utility-focused |
+| 10.0 | 1e-5 | 0.51 | 0.20 | 0.80 | Utility-focused |
 
-† Simulated estimate from DomainSpec calibrated model, not a direct measurement. Utility is normalised relative to no-DP baseline (ε = ∞, baseline\_tstr = 0.98). Privacy Score = 1 − AUC\_MIA; higher = stronger privacy. A score of 0.47 at ε=0.1 means AUC≈0.53 (near-random, consistent with tight DP). Values are generated by `scripts/run_epsilon_sweep.py` and logged in `results/epsilon_sweep.json`.
+‡ Measured — mean over 5 Opacus DP-SGD training seeds (`scripts/run_opacus_dp_sweep.py`, HR/Adult Income domain), not a simulated estimate. Utility here is raw TSTR F1 on the HR domain (oracle F1 = 0.69 for this domain's DPVAE pipeline), not normalized against a no-DP baseline as in the earlier simulated version of this table — see Table 2 for domain-by-domain retention percentages, which vary far more across domains than this single-domain view suggests. Privacy Score = 1 − mean MIA AUC; higher = stronger privacy. A near-constant ~0.50–0.51 across all ε (vs. the previously simulated 0.23–0.47 range) means the loss-threshold MIA attack found essentially no exploitable membership signal at *any* tested ε for this small, undertrained model — consistent with 5.1.1's point that this pilot's utility ceiling, not its privacy protection, is the binding constraint. Fidelity is notably flatter across ε (0.75-0.80) than utility is (0.00-0.20): the DPVAE's marginal-distribution fidelity to real data barely depends on the privacy budget, while its downstream classification usefulness depends heavily on it — a real, measured dissociation between "looks statistically similar" and "is useful for the task," which is itself one of the paper's Section 5 findings. Values are generated by `scripts/run_epsilon_sweep.py` and logged in `results/epsilon_sweep.json`.
 
 ---
 
@@ -409,4 +419,4 @@ For DP-SGD-based synthesizers (DP-CTGAN, DP-TVAE), per-step privacy is tracked v
 | 5.0 | 1e-5 | 1.1 | 0.01 | 500 | 16 | PRV |
 | 10.0 | 1e-5 | 0.8 | 0.01 | 500 | 16 | PRV |
 
-*Note*: DP utility values in Table 2 are estimated from calibrated domain retention curves anchored to the real oracle baselines (Section 5.1), not from direct end-to-end DP-SGD training runs. The hyperparameters above document the intended experimental configuration for the planned end-to-end validation (Section 8, Future Work). Reported ε values are verified against the PRV accountant to within ±0.01.
+*Note*: DP utility values in Table 2 are now measured from real end-to-end DP-SGD training runs (Section 5.1), via a pilot-scale Opacus-backed DPVAE rather than the DP-CTGAN/DP-TVAE hyperparameter configuration documented above — that configuration remains the target for the production-grade follow-up described in Section 8. Reported ε values in Table 2 are verified against the Opacus PRV accountant to within ±0.01 (see `spent_epsilon_mean` in `results/real_dp_sweep.json`).

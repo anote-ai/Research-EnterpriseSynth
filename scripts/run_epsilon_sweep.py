@@ -16,6 +16,7 @@ import argparse
 import sys
 import os
 import json
+import pathlib
 import random
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -24,6 +25,30 @@ from privacy_benchmark.config import EPSILON_VALUES, COMPLIANCE_TIERS
 from privacy_benchmark.evaluator import evaluate_with_ci, evaluate_multi_seed
 from privacy_benchmark.stats import epsilon_variance_profile, significance_test
 from privacy_benchmark.domains import get_domain
+
+# ---------------------------------------------------------------------------
+# Real Opacus DP-SGD measurements (results/real_dp_sweep.json), when present.
+#
+# Produced by scripts/run_opacus_dp_sweep.py: a real DP tabular VAE trained
+# with Opacus on real UCI proxy datasets (Adult/Credit-G/Diabetes PIMA), one
+# per enterprise domain, averaged over multiple seeds to smooth out the high
+# run-to-run variance of a small model trained in very few gradient steps.
+# Where a (domain, epsilon) pair has real data, it replaces the simulated
+# privacy/utility scores below; fidelity has no real measurement yet and
+# stays on the calibrated DomainSpec model regardless.
+# ---------------------------------------------------------------------------
+
+REAL_DP_SWEEP_PATH = pathlib.Path(__file__).parent.parent / "results" / "real_dp_sweep.json"
+
+
+def _load_real_dp_sweep() -> dict[tuple[str, float], dict]:
+    if not REAL_DP_SWEEP_PATH.exists():
+        return {}
+    rows = json.loads(REAL_DP_SWEEP_PATH.read_text())
+    return {(row["enterprise_domain"], row["epsilon"]): row for row in rows}
+
+
+REAL_DP_SWEEP = _load_real_dp_sweep()
 
 # ---------------------------------------------------------------------------
 # Domain-aware per-ε scores
@@ -124,32 +149,68 @@ def run_epsilon_sweep(asset_type: str, n_seeds: int, verbose: bool) -> list[dict
     variance_profile = epsilon_variance_profile(eps_to_seed_results, metric="utility_score")
 
     # Full CI evaluation per ε
-    # The deterministic DomainSpec.utility_at_epsilon(ε) is the model's ground truth —
-    # it is the center that guarantees monotonicity and correct domain ordering by design.
-    # Using it directly avoids seed-jitter noise flipping adjacent domains at tight ε
-    # (where domain curves are only ~0.003 apart).  auc and fidelity are still averaged
-    # across seeds since their ordering is less critical.  The 20 tstr_scores_ci scatter
-    # around this deterministic center and feed the bootstrap CI calculation only.
+    #
+    # When results/real_dp_sweep.json has a measured row for (asset_type, eps)
+    # (real Opacus DP-SGD training, averaged over several seeds — see
+    # scripts/run_opacus_dp_sweep.py), that replaces the simulated privacy/
+    # utility scores below. Fidelity has no real measurement yet, so it stays
+    # on the calibrated DomainSpec model even for "measured" rows.
+    #
+    # Where no real row exists, we fall back to the calibrated simulation:
+    # DomainSpec.utility_at_epsilon(ε) is the deterministic center that
+    # guarantees monotonicity and correct domain ordering by design (using it
+    # directly avoids seed-jitter noise flipping adjacent domains at tight ε,
+    # where domain curves are only ~0.003 apart). auc and fidelity are
+    # averaged across seeds since their ordering is less critical. The 20
+    # tstr_scores_ci scatter around this deterministic center and feed the
+    # bootstrap CI calculation only.
     results = []
     for eps in EPSILON_VALUES:
-        det_tstr = domain.utility_at_epsilon(eps)       # deterministic model center
-        mean_auc = sum(c["auc"] for c in seed_configs_by_eps[eps]) / n_seeds
-        mean_fidelity = sum(c["fidelity"] for c in seed_configs_by_eps[eps]) / n_seeds
-        # 20 within-run record-level samples for bootstrap CI
-        rng_eval = random.Random(42 + int(eps * 1000) + hash(asset_type) % 997)
-        within_run_sigma = 0.015
-        tstr_scores_ci = [
-            min(0.99, max(0.10, det_tstr + rng_eval.gauss(0, within_run_sigma)))
-            for _ in range(20)
-        ]
-        eval_result = evaluate_with_ci(
-            epsilon=eps,
-            auc=mean_auc,
-            tstr_scores=tstr_scores_ci,
-            fidelity=mean_fidelity,
-        )
+        real_row = REAL_DP_SWEEP.get((asset_type, eps))
+        if real_row is not None:
+            has_real_fidelity = "fidelity_score_mean" in real_row
+            eval_result = evaluate_with_ci(
+                epsilon=eps,
+                auc=real_row["mia_auc_mean"],
+                tstr_scores=real_row["tstr_f1_values"],
+                fidelity=(
+                    real_row["fidelity_score_mean"] if has_real_fidelity
+                    else domain.fidelity_at_epsilon(eps)
+                ),
+            )
+            eval_result["data_source"] = real_row["data_source"]
+            eval_result["fidelity_source"] = (
+                real_row["data_source"] + " (Wasserstein-1/TVD-based, see fidelity_metric field)"
+                if has_real_fidelity
+                else "simulated — DomainSpec calibrated model (no real fidelity metric measured yet)"
+            )
+            eval_result["n_seeds"] = real_row["n_seeds"]
+            row_baseline = real_row["oracle_f1"]
+            eval_result["baseline_tstr_source"] = "measured — real oracle F1 on held-out real data"
+        else:
+            det_tstr = domain.utility_at_epsilon(eps)       # deterministic model center
+            mean_auc = sum(c["auc"] for c in seed_configs_by_eps[eps]) / n_seeds
+            mean_fidelity = sum(c["fidelity"] for c in seed_configs_by_eps[eps]) / n_seeds
+            # 20 within-run record-level samples for bootstrap CI
+            rng_eval = random.Random(42 + int(eps * 1000) + hash(asset_type) % 997)
+            within_run_sigma = 0.015
+            tstr_scores_ci = [
+                min(0.99, max(0.10, det_tstr + rng_eval.gauss(0, within_run_sigma)))
+                for _ in range(20)
+            ]
+            eval_result = evaluate_with_ci(
+                epsilon=eps,
+                auc=mean_auc,
+                tstr_scores=tstr_scores_ci,
+                fidelity=mean_fidelity,
+            )
+            eval_result["data_source"] = "simulated — DomainSpec calibrated model"
+            eval_result["fidelity_source"] = eval_result["data_source"]
+            eval_result["n_seeds"] = n_seeds
+            row_baseline = baseline_utility
+            eval_result["baseline_tstr_source"] = "simulated — DomainSpec.baseline_tstr"
+
         eval_result["asset_type"] = asset_type
-        eval_result["n_seeds"] = n_seeds
         eval_result["domain_sensitivity_multiplier"] = domain.dp_sensitivity_multiplier
         eval_result["schema_type"] = domain.schema_type
         eval_result["delta"] = 1e-5  # all results reported at delta=1e-5
@@ -160,18 +221,27 @@ def run_epsilon_sweep(asset_type: str, n_seeds: int, verbose: bool) -> list[dict
                 eval_result["compliance_tier"] = tier_name
                 break
 
-        # Utility cliff flag: < 90% of domain's no-DP baseline
-        utility_cliff = eval_result["utility_score"] < 0.90 * baseline_utility
+        # Utility cliff flag: < 90% of this row's own no-DP baseline
+        # (real oracle F1 for measured rows, DomainSpec.baseline_tstr otherwise)
+        utility_cliff = eval_result["utility_score"] < 0.90 * row_baseline
         eval_result["below_utility_cliff"] = utility_cliff
-        eval_result["baseline_tstr"] = baseline_utility
+        eval_result["baseline_tstr"] = row_baseline
 
         results.append(eval_result)
 
     # Significance test: strict tier (ε=0.5) vs. balanced (ε=2)
-    strict_scores = [_domain_scores(asset_type, 0.5, s)["tstr_scores"] for s in range(min(n_seeds, 10))]
-    balanced_scores = [_domain_scores(asset_type, 2.0, s)["tstr_scores"] for s in range(min(n_seeds, 10))]
-    strict_mean = [sum(s) / len(s) for s in strict_scores]
-    balanced_mean = [sum(s) / len(s) for s in balanced_scores]
+    # Use real per-seed TSTR F1s where measured data exists, so this doesn't
+    # contradict the (possibly measured) rows reported above it.
+    real_strict = REAL_DP_SWEEP.get((asset_type, 0.5))
+    real_balanced = REAL_DP_SWEEP.get((asset_type, 2.0))
+    if real_strict is not None and real_balanced is not None:
+        strict_mean = real_strict["tstr_f1_values"]
+        balanced_mean = real_balanced["tstr_f1_values"]
+    else:
+        strict_scores = [_domain_scores(asset_type, 0.5, s)["tstr_scores"] for s in range(min(n_seeds, 10))]
+        balanced_scores = [_domain_scores(asset_type, 2.0, s)["tstr_scores"] for s in range(min(n_seeds, 10))]
+        strict_mean = [sum(s) / len(s) for s in strict_scores]
+        balanced_mean = [sum(s) / len(s) for s in balanced_scores]
 
     sig = significance_test(
         balanced_mean,

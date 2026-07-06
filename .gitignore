@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 .DS_Store
 *.egg-info/
+paper/figures/_sweep_progress.png
